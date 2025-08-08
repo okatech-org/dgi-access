@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { Calendar, Clock, MapPin, Users, AlertCircle, CheckCircle, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { Personnel, Visite, CreneauDisponible } from '../../types/dgi-personnel';
-import { dgiData } from '../../services/dgi-data';
+import { dgiService } from '../../services/dgi-hybrid';
 
 interface PlanificateurVisitesProps {
   personnelSelectionne: Personnel[];
@@ -40,11 +40,29 @@ export const PlanificateurVisites: React.FC<PlanificateurVisitesProps> = ({
     return jours;
   }, [moisActuel]);
 
+  // État pour les visites
+  const [visitesJour, setVisitesJour] = useState<Visite[]>([]);
+
+  // Charger les visites pour la date sélectionnée
+  useEffect(() => {
+    const loadVisites = async () => {
+      try {
+        const visites = await dgiService.getVisitesPourDate(dateSelectionnee);
+        setVisitesJour(visites);
+      } catch (error) {
+        console.error('Erreur chargement visites:', error);
+        setVisitesJour([]);
+      }
+    };
+    loadVisites();
+  }, [dateSelectionnee]);
+
   // Analyser la disponibilité pour une date
   const analyserDisponibilite = (date: Date): 'libre' | 'occupe' | 'partiellement_libre' => {
-    const visitesJour = dgiData.getVisitesPourDate(date);
+    // Cette fonction sera appelée avec les données chargées
     const visitesPersonnel = visitesJour.filter(v => 
-      personnelSelectionne.some(p => p.id === v.personnel_id)
+      personnelSelectionne.some(p => p.id === v.personnel_id) &&
+      new Date(v.date_prevue).toDateString() === date.toDateString()
     );
 
     if (visitesPersonnel.length === 0) return 'libre';
@@ -72,26 +90,31 @@ export const PlanificateurVisites: React.FC<PlanificateurVisitesProps> = ({
   };
 
   // Confirmer la visite
-  const confirmerVisites = () => {
-    personnelSelectionne.forEach(person => {
-      const nouvelleVisite: Omit<Visite, 'id' | 'date_creation'> = {
-        personnel_id: person.id,
-        date_prevue: dateSelectionnee,
-        heure_prevue: heureSelectionnee,
-        duree_estimee: dureeSelectionnee,
-        objectif: objectifVisite,
-        type: typeVisite,
-        statut: 'planifiee',
-        lieu: lieuVisite,
-        participants: personnelSelectionne.map(p => p.id),
-        createur_id: 'current_user' // À remplacer par l'utilisateur connecté
-      };
-      
-      dgiData.creerVisite(nouvelleVisite);
-    });
+  const confirmerVisites = async () => {
+    try {
+      for (const person of personnelSelectionne) {
+        const nouvelleVisite: Omit<Visite, 'id' | 'date_creation'> = {
+          personnel_id: person.id,
+          date_prevue: dateSelectionnee,
+          heure_prevue: heureSelectionnee,
+          duree_estimee: dureeSelectionnee,
+          objectif: objectifVisite,
+          type: typeVisite,
+          statut: 'planifiee',
+          lieu: lieuVisite,
+          participants: personnelSelectionne.map(p => p.id),
+          createur_id: 'current_user' // À remplacer par l'utilisateur connecté
+        };
+        
+        await dgiService.creerVisite(nouvelleVisite);
+      }
 
-    alert(`${personnelSelectionne.length} visite(s) planifiée(s) avec succès !`);
-    onRetour();
+      alert(`${personnelSelectionne.length} visite(s) planifiée(s) avec succès !`);
+      onRetour();
+    } catch (error) {
+      console.error('Erreur création visites:', error);
+      alert('Erreur lors de la planification des visites');
+    }
   };
 
   const heuresDisponibles = [

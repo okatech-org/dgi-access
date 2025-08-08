@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { ChevronDown, ChevronRight, User, Users, MapPin, Phone, Mail, Eye, Calendar } from 'lucide-react';
 import { Personnel, ServiceDGI } from '../../types/dgi-personnel';
-import { dgiData } from '../../services/dgi-data';
+import { dgiService } from '../../services/dgi-hybrid';
 
 interface OrganigrammeNode {
   personnel?: Personnel;
@@ -16,12 +16,37 @@ export const OrganigrammeDGI: React.FC = () => {
   const [modeSelection, setModeSelection] = useState(false);
   const [personnelSelectionnePourVisite, setPersonnelSelectionnePourVisite] = useState<string[]>([]);
 
-  const personnel = dgiData.getPersonnel();
-  const services = dgiData.getServices();
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+  const [services, setServices] = useState<ServiceDGI[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Charger les données
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [personnelData, servicesData] = await Promise.all([
+          dgiService.getPersonnel(),
+          dgiService.getServices()
+        ]);
+        setPersonnel(personnelData);
+        setServices(servicesData);
+      } catch (error) {
+        console.error('Erreur chargement données organigramme:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
 
   // Construire l'arbre hiérarchique
-  const organigramme = useMemo((): OrganigrammeNode => {
-    const servicePrincipal = services.find(s => s.id === 'dgi')!;
+  const organigramme = useMemo((): OrganigrammeNode | null => {
+    if (services.length === 0 || personnel.length === 0) return null;
+    
+    const servicePrincipal = services.find(s => s.id === 'dgi');
+    if (!servicePrincipal) return null;
     
     const construireArbre = (service: ServiceDGI, niveau: number = 0): OrganigrammeNode => {
       const responsable = service.responsable_id ? 
@@ -257,7 +282,30 @@ export const OrganigrammeDGI: React.FC = () => {
     );
   };
 
-  return (
+      // Affichage du loading
+    if (loading) {
+      return (
+        <div className="p-6 max-w-7xl mx-auto">
+          <div className="flex items-center justify-center py-12">
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <span className="ml-3 text-gray-600">Chargement de l'organigramme...</span>
+          </div>
+        </div>
+      );
+    }
+
+    if (!organigramme) {
+      return (
+        <div className="p-6 max-w-7xl mx-auto">
+          <div className="text-center py-12 text-gray-500">
+            <Users className="h-12 w-12 mx-auto mb-4 text-gray-300" />
+            <p>Impossible de charger l'organigramme</p>
+          </div>
+        </div>
+      );
+    }
+
+    return (
     <div className="p-6 max-w-7xl mx-auto">
       {/* En-tête */}
       <div className="mb-6">

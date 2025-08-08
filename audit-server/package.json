@@ -6,7 +6,9 @@
   "type": "module",
   "scripts": {
     "start": "node server.js",
+    "start:dgi": "node dgi-server.js",
     "dev": "node --watch server.js",
+    "dev:dgi": "node --watch dgi-server.js",
     "test": "node test-server.js"
   },
   "dependencies": {
@@ -14,7 +16,8 @@
     "cors": "^2.8.5",
     "helmet": "^7.1.0",
     "compression": "^1.7.4",
-    "rate-limiter-flexible": "^5.0.3"
+    "rate-limiter-flexible": "^5.0.3",
+    "better-sqlite3": "^9.2.2"
   },
   "devDependencies": {
     "nodemon": "^3.0.2"

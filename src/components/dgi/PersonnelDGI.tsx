@@ -1,7 +1,7 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Search, Filter, Calendar, Download, User, MapPin, Phone, Mail, ChevronDown, GitBranch } from 'lucide-react';
 import { Personnel, FiltresPersonnel, SelectionPersonnel } from '../../types/dgi-personnel';
-import { dgiData } from '../../services/dgi-data';
+import { dgiService } from '../../services/dgi-hybrid';
 import { PlanificateurVisites } from './PlanificateurVisites';
 import { OrganigrammeDGI } from './OrganigrammeDGI';
 
@@ -10,10 +10,33 @@ export const PersonnelDGI: React.FC = () => {
   const [personnelSelectionne, setPersonnelSelectionne] = useState<string[]>([]);
   const [afficherPlanificateur, setAfficherPlanificateur] = useState(false);
   const [ongletActuel, setOngletActuel] = useState<'liste' | 'organigramme'>('liste');
+  const [personnel, setPersonnel] = useState<Personnel[]>([]);
+  const [services, setServices] = useState<any[]>([]);
+  const [stats, setStats] = useState<any>({});
+  const [loading, setLoading] = useState(true);
 
-  const personnel = useMemo(() => dgiData.filtrerPersonnel(filtres), [filtres]);
-  const services = dgiData.getServices();
-  const stats = dgiData.getStatistiquesPersonnel();
+  // Charger les données
+  useEffect(() => {
+    const loadData = async () => {
+      try {
+        setLoading(true);
+        const [personnelData, servicesData, statsData] = await Promise.all([
+          dgiService.filtrerPersonnel(filtres),
+          dgiService.getServices(),
+          dgiService.getStatistiquesPersonnel()
+        ]);
+        setPersonnel(personnelData);
+        setServices(servicesData);
+        setStats(statsData);
+      } catch (error) {
+        console.error('Erreur chargement données DGI:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, [filtres]);
 
   const handleSelectionChange = (personnelId: string, selected: boolean) => {
     setPersonnelSelectionne(prev => 
@@ -33,7 +56,7 @@ export const PersonnelDGI: React.FC = () => {
         personnel_ids: personnelSelectionne,
         date_selection: new Date()
       };
-      dgiData.sauvegarderSelection(selection);
+      dgiService.sauvegarderSelection(selection);
       setAfficherPlanificateur(true);
     }
   };
@@ -128,10 +151,18 @@ export const PersonnelDGI: React.FC = () => {
         </div>
       </div>
 
+      {/* Indicateur de chargement */}
+      {loading && (
+        <div className="flex items-center justify-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+          <span className="ml-3 text-gray-600">Chargement des données DGI...</span>
+        </div>
+      )}
+
       {/* Contenu selon l'onglet */}
-      {ongletActuel === 'organigramme' ? (
+      {!loading && ongletActuel === 'organigramme' ? (
         <OrganigrammeDGI />
-      ) : (
+      ) : !loading ? (
         <div>
 
       {/* Filtres et actions */}
@@ -320,7 +351,7 @@ export const PersonnelDGI: React.FC = () => {
         </div>
       )}
         </div>
-      )}
+      ) : null}
     </div>
   );
 };

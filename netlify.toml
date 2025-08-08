@@ -4,6 +4,9 @@
 
 [build.environment]
   NODE_VERSION = "18"
+  VITE_USE_API = "false"
+  VITE_APP_TITLE = "DGI Access - Gabon"
+  VITE_APP_VERSION = "2.0.0"
 
 [[redirects]]
   from = "/*"
