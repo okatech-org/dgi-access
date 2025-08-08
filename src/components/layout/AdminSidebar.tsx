@@ -1,42 +1,5 @@
 import React from 'react';
-import { 
-  Home, 
-  Users, 
-  Settings, 
-  Shield, 
-  BarChart3, 
-  FileText, 
-  Image as ImageIcon, 
-  Palette, 
-  Monitor, 
-  Package, 
-  Calendar, 
-  Bell, 
-  HelpCircle,
-  Award,
-  Zap,
-  PieChart,
-  Layout,
-  Globe,
-  Mail,
-  Database,
-  Layers,
-  PenTool,
-  Sliders,
-  AlertTriangle,
-  Server,
-  Briefcase,
-  Lock,
-  Code,
-  Download,
-  Upload,
-  RefreshCw,
-  UserPlus,
-  Search,
-  Clock,
-  UserCheck,
-  Tag
-} from 'lucide-react';
+import { Home, Users, Shield, Tag, Search, Clock } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface AdminSidebarProps {
@@ -49,52 +12,22 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, activeModule
   const { user } = useAuth();
 
   const adminModules = [
-    { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-600', description: "Vue d'ensemble du système" },
-    { id: 'users', label: 'Utilisateurs', icon: Users, color: 'text-purple-600', description: 'Gestion des comptes utilisateurs' },
-    { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600', description: 'Entrées/Sorties & badges' },
-    { id: 'visitors', label: 'Visites', icon: Users, color: 'text-blue-600', description: 'Visiteurs & historiques' },
-    { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600', description: 'Planification des visites' },
-    { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600', description: 'Réception et suivi' },
-    { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600', description: 'Création & révocation' },
-    { id: 'visitor-stats', label: 'Statistiques', icon: BarChart3, color: 'text-purple-600', description: 'Métriques d\'accueil' },
-    { id: 'notifications', label: 'Notifications', icon: Bell, color: 'text-orange-600', description: 'Alertes et messages' },
-    { id: 'system-settings', label: 'Configuration', icon: Settings, color: 'text-gray-600', description: 'Paramètres système' },
-    { id: 'audit', label: 'Audit & Sécurité', icon: Shield, color: 'text-red-600', description: 'Logs et sécurité' },
+    { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-600', description: "Vue d'ensemble" },
+    { id: 'personnel', label: 'Personnel', icon: Users, color: 'text-purple-600', description: 'Gestion du personnel' },
+    { id: 'visitors', label: 'Visiteurs', icon: Users, color: 'text-blue-600', description: 'Enregistrements visiteurs' },
+    { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600', description: 'Badges actifs' },
+    { id: 'dgi-personnel', label: 'DGI Personnel', icon: Users, color: 'text-indigo-600', description: 'Personnel DGI Gabon' },
+    { id: 'reports', label: 'Rapports', icon: Home, color: 'text-gray-600', description: 'Exports & synthèse' },
   ];
 
-  const quickActions = [
-    { 
-      id: 'image-upload', 
-      label: 'Upload Image', 
-      icon: Upload, 
-      action: () => onModuleChange('image-management')
-    },
-    { 
-      id: 'new-user', 
-      label: 'Nouvel Utilisateur', 
-      icon: UserPlus, 
-      action: () => onModuleChange('users')
-    },
-    { 
-      id: 'system-health', 
-      label: 'État Système', 
-      icon: Monitor, 
-      action: () => onModuleChange('audit')
-    },
-    { 
-      id: 'optimize', 
-      label: 'Optimiser', 
-      icon: Zap, 
-      action: () => console.log('Optimization triggered')
-    }
-  ];
+  const quickActions: { id: string; label: string; icon: any; action: () => void }[] = [];
 
   // Sections groupées
   const sidebarSections = [
-    { title: 'Général', modules: ['dashboard', 'users'] },
-    { title: 'Entrées/Sorties', modules: ['reception', 'visitors', 'appointments', 'packages', 'badges'] },
-    { title: 'Analyse & Rapports', modules: ['visitor-stats', 'audit'] },
-    { title: 'Configuration', modules: ['system-settings', 'notifications'] },
+    { title: 'Général', modules: ['dashboard'] },
+    { title: 'Opérations', modules: ['personnel', 'visitors', 'badges'] },
+    { title: 'DGI Gabon', modules: ['dgi-personnel'] },
+    { title: 'Rapports', modules: ['reports'] },
   ];
 
   // Rechercher un module par son ID

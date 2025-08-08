@@ -5,6 +5,7 @@ Serveur centralisé pour la collecte et l'analyse des événements d'audit de l'
 ## 🚀 Démarrage rapide
 
 ### Installation locale
+ 
 ```bash
 cd audit-server
 npm install
@@ -12,6 +13,7 @@ npm start
 ```
 
 ### Avec Docker
+ 
 ```bash
 cd audit-server
 docker-compose up -d
@@ -20,11 +22,13 @@ docker-compose up -d
 ## 📊 API Endpoints
 
 ### Health Check
+ 
 ```http
 GET /health
 ```
 
 ### Envoi d'événements d'audit
+ 
 ```http
 POST /api/logs
 Content-Type: application/json
@@ -49,6 +53,7 @@ X-API-Key: your-api-key
 ```
 
 ### Statistiques
+ 
 ```http
 GET /api/stats?startDate=2024-01-01&endDate=2024-01-31
 X-API-Key: your-api-key
@@ -74,6 +79,7 @@ X-API-Key: your-api-key
 ### Configuration de production
 
 Créer un fichier `.env` :
+ 
 ```env
 PORT=3001
 LOG_DIR=/var/log/dgi-audit
@@ -84,14 +90,17 @@ SERVER_IP=10.0.1.50
 ## 🔒 Sécurité
 
 ### Authentification
+ 
 - Toutes les routes d'API nécessitent une clé API
 - Header: `X-API-Key: your-key` ou `Authorization: Bearer your-key`
 
 ### Rate Limiting
+ 
 - 100 requêtes par minute par IP
 - Configurable via `rate-limiter-flexible`
 
 ### Validation
+ 
 - Validation stricte des événements d'audit
 - Sanitisation des entrées
 - Logs d'erreurs sécurisés
@@ -99,7 +108,8 @@ SERVER_IP=10.0.1.50
 ## 📁 Structure des logs
 
 Les événements sont stockés dans des fichiers JSONL (JSON Lines) :
-```
+ 
+```text
 logs/
 ├── audit-2024-01-15.jsonl
 ├── audit-2024-01-16.jsonl
@@ -113,8 +123,9 @@ Chaque ligne est un événement JSON :
 
 ## 📈 Monitoring
 
-### Health Check
+### État de santé (monitoring)
 Le serveur expose un endpoint `/health` pour le monitoring :
+ 
 ```json
 {
   "status": "OK",

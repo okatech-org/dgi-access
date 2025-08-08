@@ -1,22 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { DashboardHome } from '../modules/DashboardHome';
-import { DocumentationModule } from '../modules/DocumentationModule';
-import { ImmigrationModule } from '../modules/ImmigrationModule';
-import { StatisticsModule } from '../modules/StatisticsModule';
-import { UsersModule } from '../modules/UsersModule';
-import { AuditModule } from '../modules/AuditModule';
-import { ReceptionModule } from '../modules/ReceptionModule';
-import { AppointmentsModule } from '../modules/AppointmentsModule';
-import { PackagesModule } from '../modules/PackagesModule';
-import { VisitorStatsModule } from '../modules/VisitorStatsModule';
-import { ImageManagementModule } from '../modules/ImageManagementModule';
-import { LogoManagementModule } from '../modules/LogoManagementModule';
-import { BadgeManagementModule } from '../modules/BadgeManagementModule';
-import { VisitorManagementModule } from '../modules/VisitorManagementModule';
-import { StaffManagementModule } from '../modules/StaffManagementModule';
+import { PersonnelModule } from '../modules/PersonnelModule';
+import { VisitorModule } from '../modules/VisitorModule';
+import { BadgeModule } from '../modules/BadgeModule';
+import { ReportsModule } from '../modules/ReportsModule';
+import { DGIModule } from '../modules/DGIModule';
 import { UserProfile } from '../UserProfile';
-import { SystemSettingsModule } from '../modules/SystemSettingsModule';
-import { NotificationsModule } from '../modules/NotificationsModule';
 import { AdminDashboardModule } from '../modules/AdminDashboardModule';
 import { useAuth } from '../../contexts/AuthContext';
 
@@ -34,12 +23,8 @@ export const MainContent: React.FC<MainContentProps> = ({ activeModule, sidebarO
   const { user } = useAuth();
 
   const allowedByRole: Record<'ADMIN' | 'RECEPTION', string[]> = {
-    ADMIN: [
-      'dashboard','users','reception','visitors','appointments','packages','badges','visitor-stats','audit','system-settings','notifications','profile'
-    ],
-    RECEPTION: [
-      'dashboard','reception','visitors','appointments','packages','badges','visitor-stats','profile'
-    ]
+    ADMIN: ['dashboard', 'personnel', 'visitors', 'badges', 'reports', 'dgi-personnel', 'profile'],
+    RECEPTION: ['dashboard', 'personnel', 'visitors', 'badges', 'reports', 'dgi-personnel', 'profile']
   };
 
   const effectiveModule = (() => {
@@ -69,43 +54,21 @@ export const MainContent: React.FC<MainContentProps> = ({ activeModule, sidebarO
     switch (effectiveModule) {
       case 'dashboard':
         return user?.role === 'ADMIN' ? <AdminDashboardModule /> : <DashboardHome />;
-      case 'documentation':
-        return <DocumentationModule />;
-      case 'immigration':
-        return <ImmigrationModule />;
-      case 'statistics':
-        return <StatisticsModule />;
-      case 'users':
-        return <UsersModule />;
-      case 'audit':
-        return <AuditModule />;
-      case 'reception':
-        return <ReceptionModule />;
-      case 'appointments':
-        return <AppointmentsModule />;
-      case 'packages':
-        return <PackagesModule />;
-      case 'visitor-stats':
-        return <VisitorStatsModule />;
-      case 'badges':
-        return <BadgeManagementModule />;
+      case 'personnel':
+        return <PersonnelModule />;
       case 'visitors':
-        return <VisitorManagementModule />;
-      case 'staff':
-        return <StaffManagementModule />;
-      case 'image-management':
-        return <ImageManagementModule />;
-      case 'logo-management':
-        return <LogoManagementModule />;
-      case 'system-settings':
-        return <SystemSettingsModule />;
-      case 'notifications':
-        return <NotificationsModule />;
+        return <VisitorModule />;
+      case 'badges':
+        return <BadgeModule />;
+      case 'reports':
+        return <ReportsModule />;
+      case 'dgi-personnel':
+        return <DGIModule />;
       case 'profile':
         console.log('🔄 Chargement UserProfile...');
         return <UserProfile key={Date.now()} />;
       default:
-        return user?.role === 'ADMIN' ? <AdminDashboardModule /> : <DashboardHome />;
+        return <DashboardHome />;
     }
   };
 

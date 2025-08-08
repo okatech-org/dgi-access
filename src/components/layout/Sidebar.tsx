@@ -1,11 +1,7 @@
 import React from 'react';
-import { Home, FileText, Import as Passport, Users, BarChart3, Settings, AlertTriangle, MapPin, Search, UserCheck, Package, Calendar, Camera, Bell, User, HelpCircle, BookOpen, Image as ImageIcon, Award, Tag, Shield, UserPlus, Phone, Briefcase } from 'lucide-react';
+import { Home, Users, User, Tag } from 'lucide-react';
 import { useAuth } from '../../contexts/AuthContext';
-import { useInteractiveGuide } from '../../hooks/useInteractiveGuide';
-import { receptionistGuideSteps, quickGuideSteps } from '../../data/receptionistGuide';
-import { GuideButton } from '../ui/GuideButton';
 import { AdminSidebar } from './AdminSidebar';
-import { navigateToModule } from '../../utils/deploymentHelpers';
 
 interface SidebarProps {
   isOpen: boolean;
@@ -27,46 +23,26 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
     );
   }
 
-  // Guides interactifs pour les réceptionnistes
-  const { startGuide: startMainGuide, shouldShowGuideButton } = useInteractiveGuide({
-    guideId: 'receptionist-main',
-    steps: receptionistGuideSteps,
-    autoStart: false,
-    showOnFirstVisit: false
-  });
-
-  const { startGuide: startQuickGuide } = useInteractiveGuide({
-    guideId: 'receptionist-quick',
-    steps: quickGuideSteps,
-    autoStart: false,
-    showOnFirstVisit: false
-  });
+  
 
   const getMenuItems = () => {
-    const baseItems = [
-      { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-600' },
-    ];
+    const baseItems = [{ id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-600' }];
     
     // Items spécifiques aux rôles - seuls les rôles actifs sont conservés
-    const roleItems: Record<string, { id: string, label: string, icon: any, color: string, description?: string }[]> = {
+    const roleItems: Record<string, { id: string; label: string; icon: any; color: string; description?: string }[]> = {
       ADMIN: [
-        { id: 'users', label: 'Utilisateurs', icon: Users, color: 'text-purple-600' },
-        { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600' },
-        { id: 'visitors', label: 'Visites', icon: UserPlus, color: 'text-blue-600' },
-        { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600' },
-        { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600' },
+        { id: 'personnel', label: 'Personnel', icon: Users, color: 'text-purple-600' },
+        { id: 'visitors', label: 'Visiteurs', icon: Users, color: 'text-blue-600' },
         { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600' },
-        { id: 'visitor-stats', label: 'Statistiques', icon: BarChart3, color: 'text-purple-600' },
-        { id: 'audit', label: 'Audit & Logs', icon: Shield, color: 'text-red-600' },
-        { id: 'system-settings', label: 'Paramètres', icon: Settings, color: 'text-gray-600' },
+        { id: 'dgi-personnel', label: 'DGI Personnel', icon: Users, color: 'text-indigo-600' },
+        { id: 'reports', label: 'Rapports', icon: Home, color: 'text-gray-600' },
       ],
       RECEPTION: [
-        { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600', description: 'Entrées/Sorties & badges' },
-        { id: 'visitors', label: 'Visites', icon: UserPlus, color: 'text-blue-600', description: 'Visiteurs & historiques' },
-        { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600', description: 'Planification des visites' },
-        { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600', description: 'Réception et suivi' },
-        { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600', description: 'Création & révocation' },
-        { id: 'visitor-stats', label: 'Statistiques', icon: BarChart3, color: 'text-purple-600', description: 'Métriques d\'accueil' },
+        { id: 'personnel', label: 'Personnel', icon: Users, color: 'text-purple-600' },
+        { id: 'visitors', label: 'Visiteurs', icon: Users, color: 'text-blue-600' },
+        { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600' },
+        { id: 'dgi-personnel', label: 'DGI Personnel', icon: Users, color: 'text-indigo-600' },
+        { id: 'reports', label: 'Rapports', icon: Home, color: 'text-gray-600' },
       ],
     };
 
@@ -77,15 +53,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
   };
 
   // Gestionnaire amélioré pour le changement de module avec navigation
-  const handleModuleChange = (moduleId: string) => {
-    console.log('🎯 Changement de module vers:', moduleId);
-    
-    // Utiliser l'utilitaire de navigation pour une cohérence globale
-    navigateToModule(moduleId);
-    
-    // Appeler le gestionnaire original pour la mise à jour du state
-    onModuleChange(moduleId);
-  };
+  const handleModuleChange = (moduleId: string) => onModuleChange(moduleId);
 
   return (
     <div 
@@ -148,90 +116,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
         </nav>
       </div>
 
-      {/* Zone d'aide contextuelle en bas - MOBILE OPTIMISÉ */}
-      {isOpen && (
-        <div className="p-2 md:p-3 border-t border-gray-200 bg-gray-50/50">
-          {user?.role === 'RECEPTION' ? (
-            <div className="space-y-2">
-              {/* Titre section aide */}
-              <div className="flex items-center gap-2">
-                <BookOpen className="h-4 w-4 text-blue-600 flex-shrink-0" />
-                <span className="text-sm font-bold text-gray-900">Centre d'Aide</span>
-              </div>
-
-              {/* Guides disponibles */}
-              <div className="space-y-1">
-                {/* Guide principal */}
-                {shouldShowGuideButton() && (
-                  <GuideButton
-                    onClick={startMainGuide}
-                    variant="primary"
-                    size="sm"
-                    label="Guide Complet"
-                    className="w-full justify-center text-xs min-h-[36px]"
-                  />
-                )}
-                
-                {/* Guide rapide */}
-                <GuideButton
-                  onClick={startQuickGuide}
-                  variant="secondary"
-                  size="sm"
-                  label="Démarrage Rapide"
-                  className="w-full justify-center text-xs min-h-[36px]"
-                />
-
-                {/* Aide contextuelle */}
-                <button className="w-full text-xs bg-gray-100 text-gray-700 px-3 py-2 rounded-lg hover:bg-gray-200 transition-colors min-h-[36px] flex items-center justify-center gap-2">
-                  <HelpCircle className="h-3 w-3 flex-shrink-0" />
-                  Aide Contextuelle
-                </button>
-              </div>
-
-              {/* Statut des équipements - COMPACT */}
-              <div className="bg-gradient-to-br from-teal-50 to-blue-50 border border-teal-200 rounded-lg p-2">
-                <div className="flex items-center gap-2 mb-1">
-                  <Camera className="h-4 w-4 text-teal-600 flex-shrink-0" />
-                  <span className="text-xs font-bold text-teal-900">État Équipements</span>
-                </div>
-                <div className="space-y-1 text-xs text-teal-800">
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-green-500 rounded-full flex-shrink-0"></div>
-                    <span className="truncate">Scanner IA - 99% prêt</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full flex-shrink-0"></div>
-                    <span className="truncate">Badges - Opérationnel</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full flex-shrink-0"></div>
-                    <span className="truncate">Notifications - Actif</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-          ) : (
-            <div className="bg-amber-50 border border-amber-200 rounded-lg p-3">
-              <div className="flex items-center gap-2 mb-2">
-                <AlertTriangle className="h-4 w-4 text-amber-600 flex-shrink-0" />
-                <span className="text-sm font-medium text-amber-800">Informations</span>
-              </div>
-              <p className="text-xs text-amber-700 mb-2">
-                Système opérationnel
-              </p>
-              <div className="mt-2">
-                <GuideButton
-                  onClick={() => console.log('Guide général')}
-                  variant="secondary"
-                  size="sm"
-                  label="Aide"
-                  className="w-full justify-center text-xs min-h-[32px]"
-                />
-              </div>
-            </div>
-          )}
-        </div>
-      )}
+      {false && <div />}
     </div>
   );
 };

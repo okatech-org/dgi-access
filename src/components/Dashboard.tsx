@@ -20,7 +20,7 @@ export const Dashboard: React.FC = () => {
     const prefix = user?.role === 'ADMIN' ? '/admin' : '/reception';
     
     if (path.startsWith(prefix)) {
-      const module = path.slice(prefix.length + 1) || (user?.role === 'ADMIN' ? 'dashboard' : 'reception');
+      const module = path.slice(prefix.length + 1) || 'dashboard';
       setActiveModule(module);
     }
   }, [location.pathname, user?.role]);
