@@ -45,7 +45,7 @@ interface ReceptionistStats {
   securityAlertsToday: number;
 }
 
-export type UserRole = 'ADMIN' | 'RECEP';
+export type UserRole = 'ADMIN' | 'RECEPTION';
 
 interface AuthContextType {
   user: User | null;
@@ -82,7 +82,7 @@ const userProfiles = {
     id: 'recep-001',
     firstName: 'Sylvie',
     lastName: 'MBOUMBA NGUEMA',
-    role: 'RECEP' as const,
+    role: 'RECEPTION' as const,
     department: 'Accueil et Orientation',
     location: 'IMPOTS Libreville - Hall d\'Accueil Principal',
     employeeId: 'RECEP-001',

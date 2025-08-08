@@ -62,13 +62,13 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
       ACF: 'Agent Contrôle Frontalier',
       SR: 'Superviseur Régional',
       AC: 'Auditeur/Contrôleur',
-      RECEP: 'Réceptionniste IMPOTS'
+      RECEPTION: 'Réceptionniste IMPOTS'
     };
     return labels[role as keyof typeof labels] || role;
   };
 
   // Notifications optimisées pour réceptionniste
-  const notifications: NotificationItem[] = user?.role === 'RECEP' ? [
+  const notifications: NotificationItem[] = user?.role === 'RECEPTION' ? [
     {
       id: 'urgent-vip',
       type: 'urgent',
@@ -151,7 +151,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
               <div className="hidden sm:block">
                 <h1 className="text-sm md:text-lg font-bold text-gray-900">IMPOTS Access</h1>
                 <p className="text-xs text-gray-600 hidden md:block">
-                  {user?.role === 'RECEP' ? 'Accueil Intelligent' : 'Système de Gestion'}
+                  {user?.role === 'RECEPTION' ? 'Accueil Intelligent' : 'Système de Gestion'}
                 </p>
               </div>
               {/* Version mobile très compacte */}
@@ -164,7 +164,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
           {/* Côté droit - Actions MOBILE FIRST */}
           <div className="flex items-center gap-1 md:gap-2">
             {/* Actions rapides réceptionniste - MOBILE OPTIMISÉ */}
-            {user?.role === 'RECEP' && (
+            {user?.role === 'RECEPTION' && (
               <div className="relative">
                 {/* Version mobile - bouton très compact */}
                 <button 
@@ -411,7 +411,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
                   <p className="text-xs text-gray-600">
                     {user?.position || getRoleLabel(user?.role || '')}
                   </p>
-                  {user?.role === 'RECEP' && user?.stats && (
+                  {user?.role === 'RECEPTION' && user?.stats && (
                     <p className="text-xs text-green-600 font-medium">
                       {user.stats.visitorsRegisteredToday} citoyens • {user.stats.satisfactionScore}/5
                     </p>
@@ -427,7 +427,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
                   
                   {/* Menu desktop profil */}
                   <div className="absolute right-0 top-full mt-2 w-72 bg-white rounded-2xl shadow-2xl border border-gray-200 py-4 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                    {user?.role === 'RECEP' && (
+                    {user?.role === 'RECEPTION' && (
                       <div className="px-6 py-3 border-b border-gray-200 bg-gradient-to-r from-teal-50 to-blue-50">
                         <div className="flex items-center gap-3">
                           <Award className="h-6 w-6 text-teal-600" />
@@ -466,7 +466,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
                       Paramètres
                     </button>
                     
-                    {user?.role === 'RECEP' && (
+                    {user?.role === 'RECEPTION' && (
                       <button className="w-full px-6 py-3 text-left hover:bg-gray-50 flex items-center gap-3">
                         <Monitor className="h-5 w-5 text-gray-500" />
                         Poste de Travail
@@ -490,7 +490,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
                   <div className="px-4 py-3 border-b border-gray-200">
                     <p className="font-bold text-gray-900 text-sm">{user?.firstName} {user?.lastName}</p>
                     <p className="text-xs text-gray-600">{getRoleLabel(user?.role || '')}</p>
-                    {user?.role === 'RECEP' && user?.stats && (
+                    {user?.role === 'RECEPTION' && user?.stats && (
                       <div className="mt-2 grid grid-cols-3 gap-2">
                         <div className="text-center bg-teal-50 rounded-lg p-2">
                           <div className="text-sm font-bold text-teal-600">{user.stats.visitorsRegisteredToday}</div>
@@ -535,7 +535,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
         </div>
         
         {/* Barre de statut mobile COMPACTE pour réceptionniste */}
-        {user?.role === 'RECEP' && (
+        {user?.role === 'RECEPTION' && (
           <div
             className="bg-gradient-to-r from-teal-500 to-blue-600 border-t border-teal-400 px-2 md:px-3 py-1"
             data-guide="header-stats"
@@ -566,7 +566,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
       </header>
 
       {/* Bouton d'aide global pour réceptionniste */}
-      {user?.role === 'RECEP' && (
+      {user?.role === 'RECEPTION' && (
         <GlobalHelpButton
           onGuideClick={mainGuide.startGuide}
           onHelpClick={() => console.log('Aide contextuelle')}

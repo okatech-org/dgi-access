@@ -71,7 +71,7 @@ export const UserProfile: React.FC = () => {
     );
   }
 
-  const isReceptionist = user.role === 'RECEP';
+  const isReceptionist = user.role === 'RECEPTION';
 
   // Sections du profil avec navigation simplifiée - MOBILE OPTIMISÉ
   const profileSections = [

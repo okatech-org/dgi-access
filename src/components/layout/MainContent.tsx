@@ -33,17 +33,17 @@ export const MainContent: React.FC<MainContentProps> = ({ activeModule, sidebarO
   const [forceUpdate, setForceUpdate] = useState(0);
   const { user } = useAuth();
 
-  const allowedByRole: Record<'ADMIN' | 'RECEP', string[]> = {
+  const allowedByRole: Record<'ADMIN' | 'RECEPTION', string[]> = {
     ADMIN: [
       'dashboard','users','reception','visitors','appointments','packages','badges','visitor-stats','audit','system-settings','notifications','profile'
     ],
-    RECEP: [
+    RECEPTION: [
       'dashboard','reception','visitors','appointments','packages','badges','visitor-stats','profile'
     ]
   };
 
   const effectiveModule = (() => {
-    const role = (user?.role || 'RECEP') as 'ADMIN' | 'RECEP';
+    const role = (user?.role || 'RECEPTION') as 'ADMIN' | 'RECEPTION';
     const allowed = allowedByRole[role];
     return allowed.includes(activeModule) ? activeModule : 'dashboard';
   })();

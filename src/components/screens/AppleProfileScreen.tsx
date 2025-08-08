@@ -37,7 +37,7 @@ export const AppleProfileScreen: React.FC = () => {
     email: user?.email || ''
   });
 
-  const isReceptionist = user?.role === 'RECEP';
+  const isReceptionist = user?.role === 'RECEPTION';
 
   const sectionOptions = [
     { label: 'Aperçu', value: 'overview', icon: User },

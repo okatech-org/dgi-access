@@ -114,7 +114,7 @@ export const DashboardHome: React.FC = () => {
   const getWelcomeMessage = () => {
     const messages = {
       ADMIN: `Bienvenue Administrateur. Vous avez accès à toutes les fonctionnalités du système.`,
-      RECEP: `Bonjour ${user?.firstName}. Votre poste d'accueil IMPOTS est opérationnel pour servir nos citoyens gabonais avec excellence.`,
+      RECEPTION: `Bonjour ${user?.firstName}. Votre poste d'accueil IMPOTS est opérationnel pour servir nos citoyens gabonais avec excellence.`,
     };
     return messages[user?.role as keyof typeof messages] || 'Bienvenue dans IMPOTS Access';
   };
@@ -292,8 +292,8 @@ export const DashboardHome: React.FC = () => {
     },
   ];
 
-  const stats = user?.role === 'RECEP' ? getReceptionistStats() : getDefaultStats();
-  const recentActivity = user?.role === 'RECEP' ? getReceptionistActivity() : getDefaultActivity();
+  const stats = user?.role === 'RECEPTION' ? getReceptionistStats() : getDefaultStats();
+  const recentActivity = user?.role === 'RECEPTION' ? getReceptionistActivity() : getDefaultActivity();
 
   // Attribut de contexte pour faciliter les mises à jour
   const updateContext = `${forceUpdate}-${user?.role || 'unknown'}`;
@@ -357,7 +357,7 @@ export const DashboardHome: React.FC = () => {
       
       {/* Welcome Section - MOBILE FIRST */}
       <div className={`rounded-xl md:rounded-2xl p-4 md:p-6 lg:p-8 text-white ${
-        user?.role === 'RECEP' 
+        user?.role === 'RECEPTION' 
           ? 'bg-gradient-to-r from-blue-800 via-blue-700 to-teal-600' 
           : 'bg-gradient-to-r from-blue-800 to-blue-900'
       }`}>
@@ -383,7 +383,7 @@ export const DashboardHome: React.FC = () => {
                 <span className="hidden sm:inline">Dernière connexion: </span>
                 {new Date().toLocaleDateString('fr-FR')}
               </span>
-              {user?.role === 'RECEP' && (
+              {user?.role === 'RECEPTION' && (
                 <span className="flex items-center gap-1">
                   <Award className="h-3 md:h-4 w-3 md:w-4" />
                   Satisfaction: {user?.stats?.satisfactionScore}/5
@@ -392,7 +392,7 @@ export const DashboardHome: React.FC = () => {
             </div>
           </div>
           
-          {user?.role === 'RECEP' && (
+          {user?.role === 'RECEPTION' && (
             <div className="hidden lg:block">
               <div className="bg-white/10 rounded-lg p-4 backdrop-blur-sm">
                 <div className="text-center">
@@ -421,7 +421,7 @@ export const DashboardHome: React.FC = () => {
 
       {/* Statistics Grid - MOBILE RESPONSIVE */}
       <div className={`grid gap-3 md:gap-4 lg:gap-6 ${
-        user?.role === 'RECEP' 
+        user?.role === 'RECEPTION' 
           ? 'grid-cols-2 sm:grid-cols-3 xl:grid-cols-6'
           : 'grid-cols-1 sm:grid-cols-2 lg:grid-cols-4'
       }`}>
@@ -459,9 +459,9 @@ export const DashboardHome: React.FC = () => {
         >
           <div className="flex items-center justify-between mb-4 md:mb-6">
             <h3 className="text-base md:text-lg font-semibold text-gray-900">
-              {user?.role === 'RECEP' ? 'Activité Temps Réel' : 'Activité récente'}
+              {user?.role === 'RECEPTION' ? 'Activité Temps Réel' : 'Activité récente'}
             </h3>
-            {user?.role === 'RECEP' && (
+            {user?.role === 'RECEPTION' && (
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                 <span className="text-xs md:text-sm text-gray-600">Live</span>
@@ -513,7 +513,7 @@ export const DashboardHome: React.FC = () => {
         >
           <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">Actions Rapides</h3>
           <div className="grid grid-cols-2 gap-3 md:gap-4">
-            {user?.role === 'RECEP' ? (
+            {user?.role === 'RECEPTION' ? (
               <>
                 <button 
                   className="p-3 md:p-4 border border-gray-200 rounded-lg hover:bg-blue-50 hover:border-blue-300 transition-colors group min-h-[80px] md:min-h-[100px]" 
@@ -631,9 +631,9 @@ export const DashboardHome: React.FC = () => {
         data-component="system-status"
       >
         <h3 className="text-base md:text-lg font-semibold text-gray-900 mb-4">
-          {user?.role === 'RECEP' ? 'État des Équipements' : 'État du système'}
+          {user?.role === 'RECEPTION' ? 'État des Équipements' : 'État du système'}
         </h3>
-        <div className={`grid gap-3 md:gap-4 ${user?.role === 'RECEP' ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
+        <div className={`grid gap-3 md:gap-4 ${user?.role === 'RECEPTION' ? 'grid-cols-2 lg:grid-cols-4' : 'grid-cols-1 md:grid-cols-3'}`}>
           <div className="flex items-center gap-3">
             <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
             <span className="text-xs md:text-sm text-gray-700">Serveur principal: Opérationnel</span>
@@ -642,7 +642,7 @@ export const DashboardHome: React.FC = () => {
             <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
             <span className="text-xs md:text-sm text-gray-700">Base de données: Connectée</span>
           </div>
-          {user?.role === 'RECEP' && (
+          {user?.role === 'RECEPTION' && (
             <>
               <div className="flex items-center gap-3">
                 <div className="w-3 h-3 bg-green-500 rounded-full flex-shrink-0 animate-pulse"></div>
@@ -660,7 +660,7 @@ export const DashboardHome: React.FC = () => {
           </div>
         </div>
 
-        {user?.role === 'RECEP' && (
+        {user?.role === 'RECEPTION' && (
           <div className="mt-4 md:mt-6 p-3 md:p-4 bg-blue-50 rounded-lg border border-blue-200 hover:bg-blue-100 transition-colors">
             <div className="flex items-center gap-2 mb-2">
               <Shield className="h-4 md:h-5 w-4 md:w-5 text-blue-600 flex-shrink-0" />

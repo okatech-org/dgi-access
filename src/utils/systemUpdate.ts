@@ -224,7 +224,7 @@ const forceReloadReceptionistModules = (): void => {
     // 2. Simuler un changement de rôle pour forcer un rechargement complet
     const currentRole = localStorage.getItem('current_role');
     localStorage.setItem('previous_role', currentRole || '');
-    localStorage.setItem('current_role', 'RECEP');
+    localStorage.setItem('current_role', 'RECEPTION');
     
     // 3. Dispatch d'un événement personnalisé pour notifier les composants
     window.dispatchEvent(new CustomEvent('force-receptionist-update', { 

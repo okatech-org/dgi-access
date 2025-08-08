@@ -60,7 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
         { id: 'audit', label: 'Audit & Logs', icon: Shield, color: 'text-red-600' },
         { id: 'system-settings', label: 'Paramètres', icon: Settings, color: 'text-gray-600' },
       ],
-      RECEP: [
+      RECEPTION: [
         { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600', description: 'Entrées/Sorties & badges' },
         { id: 'visitors', label: 'Visites', icon: UserPlus, color: 'text-blue-600', description: 'Visiteurs & historiques' },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600', description: 'Planification des visites' },
@@ -122,7 +122,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
                 {isOpen && (
                   <div className="flex-1 text-left min-w-0">
                     <span className="font-medium text-sm md:text-base block truncate">{item.label}</span>
-                    {item.description && user?.role === 'RECEP' && item.id !== 'profile' && (
+                    {item.description && user?.role === 'RECEPTION' && item.id !== 'profile' && (
                       <p className="text-xs text-gray-500 mt-1 hidden md:block leading-tight">{item.description}</p>
                     )}
                     {item.id === 'profile' && (
@@ -151,7 +151,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
       {/* Zone d'aide contextuelle en bas - MOBILE OPTIMISÉ */}
       {isOpen && (
         <div className="p-2 md:p-3 border-t border-gray-200 bg-gray-50/50">
-          {user?.role === 'RECEP' ? (
+          {user?.role === 'RECEPTION' ? (
             <div className="space-y-2">
               {/* Titre section aide */}
               <div className="flex items-center gap-2">

@@ -46,7 +46,7 @@ export const AppleAccountSummary: React.FC = () => {
                 </div>
               )}
               
-              {user.role === 'RECEP' && (
+              {user.role === 'RECEPTION' && (
                 <div className="absolute -bottom-2 -right-2 bg-yellow-500 rounded-full p-2">
                   <Bell className="h-5 w-5 text-yellow-900" />
                 </div>
@@ -200,7 +200,7 @@ export const AppleAccountSummary: React.FC = () => {
       </AppleCard>
       
       {/* User Stats - Only for Receptionist */}
-      {user.role === 'RECEP' && user.stats && (
+      {user.role === 'RECEPTION' && user.stats && (
         <AppleCard variant="elevated">
           <div className="p-6">
             <h2 className="text-xl font-semibold mb-5">Mes Statistiques</h2>

@@ -68,7 +68,7 @@ interface Visitor {
 
 export const ReceptionModule: React.FC = () => {
   const { user } = useAuth();
-  const isReceptionist = user?.role === 'RECEP';
+  const isReceptionist = user?.role === 'RECEPTION';
   
   // State variables
   const [activeSection, setActiveSection] = useState<'register' | 'visitors' | 'scanner' | 'badges' | 'packages' | 'alerts'>('register');

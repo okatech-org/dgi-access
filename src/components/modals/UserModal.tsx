@@ -34,7 +34,7 @@ export const UserModal: React.FC<UserModalProps> = ({
     firstName: '',
     lastName: '',
     email: '',
-    role: 'RECEP',
+    role: 'RECEPTION',
     department: '',
     location: 'Libreville',
     status: 'active'
@@ -51,7 +51,7 @@ export const UserModal: React.FC<UserModalProps> = ({
         firstName: '',
         lastName: '',
         email: '',
-        role: 'RECEP',
+        role: 'RECEPTION',
         department: '',
         location: 'Libreville',
         status: 'active'
@@ -134,7 +134,7 @@ export const UserModal: React.FC<UserModalProps> = ({
       ACF: 'Agent de Recouvrement',
       SR: 'Chef de Centre Régional',
       AC: 'Auditeur Fiscal',
-      RECEP: 'Réceptionniste DGI'
+      RECEPTION: 'Réceptionniste DGI'
     } as const;
     return (labels as Record<string, string>)[role] || role;
   };
