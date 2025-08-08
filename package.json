@@ -1,7 +1,7 @@
 {
   "name": "dgi-access-application",
   "private": true,
-  "version": "1.0.0",ep
+  "version": "1.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",
