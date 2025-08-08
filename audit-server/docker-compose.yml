@@ -1,0 +1,53 @@
+version: '3.8'
+
+services:
+  audit-server:
+    build: .
+    container_name: dgi-audit-server
+    restart: unless-stopped
+    ports:
+      - "3001:3001"
+    environment:
+      - NODE_ENV=production
+      - PORT=3001
+      - LOG_DIR=/app/logs
+      - AUDIT_API_KEY=${AUDIT_API_KEY:-production-audit-key-change-me}
+      - SERVER_IP=${SERVER_IP:-docker-host}
+    volumes:
+      - audit_logs:/app/logs
+      - ./config:/app/config:ro
+    networks:
+      - audit-network
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Optionnel: Base de données pour stockage persistant
+  # postgres:
+  #   image: postgres:15-alpine
+  #   container_name: dgi-audit-db
+  #   restart: unless-stopped
+  #   environment:
+  #     POSTGRES_DB: audit_logs
+  #     POSTGRES_USER: audit_user
+  #     POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+  #   volumes:
+  #     - postgres_data:/var/lib/postgresql/data
+  #   networks:
+  #     - audit-network
+
+volumes:
+  audit_logs:
+  # postgres_data:
+
+networks:
+  audit-network:
+    driver: bridge

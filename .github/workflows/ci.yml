@@ -1,0 +1,288 @@
+name: CI/CD Pipeline - DGI Access Application
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+env:
+  NODE_VERSION: '20'
+  BUN_VERSION: '1.0.25'
+
+jobs:
+  # Job 1: Tests unitaires et qualité de code
+  test:
+    name: Tests et Qualité
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏗 Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ env.BUN_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: bun install --frozen-lockfile
+      
+    - name: 🔍 Lint code
+      run: bun run lint
+      
+    - name: 🧪 Run unit tests
+      run: bun run test:run
+      env:
+        VITE_AI_PROVIDER: mock
+        VITE_AUDIT_ENABLED: true
+        
+    - name: 📊 Generate test coverage
+      run: bun run test:coverage
+      
+    - name: 📤 Upload coverage to Codecov
+      uses: codecov/codecov-action@v3
+      with:
+        file: ./coverage/lcov.info
+        flags: unittests
+        name: dgi-access-coverage
+        
+    - name: 💾 Cache build artifacts
+      uses: actions/cache@v3
+      with:
+        path: |
+          ~/.bun/cache
+          node_modules
+        key: ${{ runner.os }}-bun-${{ hashFiles('**/bun.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-bun-
+
+  # Job 2: Tests d'intégration OpenAI (uniquement sur main)
+  integration-tests:
+    name: Tests d'Intégration
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏗 Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ env.BUN_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: bun install --frozen-lockfile
+      
+    - name: 🔧 Setup environment
+      run: bun run setup:env
+      
+    - name: 🧪 Test OpenAI integration
+      run: bun run test:openai
+      env:
+        VITE_AI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        VITE_AI_PROVIDER: openai
+      continue-on-error: true  # Ne pas faire échouer le build si OpenAI est en panne
+
+  # Job 3: Build et tests de build
+  build:
+    name: Build Application
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏗 Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ env.BUN_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: bun install --frozen-lockfile
+      
+    - name: 🔧 Setup production environment
+      run: bun run setup:env:prod
+      
+    - name: 🏗 Build application
+      run: bun run build
+      env:
+        VITE_AI_PROVIDER: openai
+        VITE_AI_API_KEY: placeholder
+        VITE_AUDIT_ENABLED: true
+        VITE_AUDIT_ENDPOINT: https://audit.dgi.ga/api/logs
+        
+    - name: 📏 Check bundle size
+      run: |
+        ls -lah dist/
+        du -sh dist/
+        
+    - name: 🧪 Test build
+      run: |
+        bun run preview &
+        sleep 5
+        curl -f http://localhost:4173 || exit 1
+        
+    - name: 📤 Upload build artifacts
+      uses: actions/upload-artifact@v3
+      with:
+        name: dist-${{ github.sha }}
+        path: dist/
+        retention-days: 30
+
+  # Job 4: Tests de sécurité
+  security:
+    name: Audit de Sécurité
+    runs-on: ubuntu-latest
+    needs: test
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏗 Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ env.BUN_VERSION }}
+        
+    - name: 📦 Install dependencies
+      run: bun install --frozen-lockfile
+      
+    - name: 🔒 Run security audit
+      run: bun audit
+      continue-on-error: true
+      
+    - name: 🕵️ CodeQL Analysis
+      uses: github/codeql-action/init@v2
+      with:
+        languages: javascript
+        
+    - name: 🏗 Autobuild
+      uses: github/codeql-action/autobuild@v2
+      
+    - name: 🔍 Perform CodeQL Analysis
+      uses: github/codeql-action/analyze@v2
+
+  # Job 5: Déploiement staging (sur develop)
+  deploy-staging:
+    name: Deploy to Staging
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
+    needs: [test, build, security]
+    environment: staging
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📥 Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-${{ github.sha }}
+        path: dist/
+        
+    - name: 🚀 Deploy to Netlify Staging
+      uses: nwtgck/actions-netlify@v2.1
+      with:
+        publish-dir: './dist'
+        production-branch: main
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-message: "Deploy from GitHub Actions - ${{ github.sha }}"
+        enable-pull-request-comment: true
+        enable-commit-comment: true
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_STAGING_SITE_ID }}
+
+  # Job 6: Déploiement production (sur main)
+  deploy-production:
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: [test, build, security, integration-tests]
+    environment: production
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 📥 Download build artifacts
+      uses: actions/download-artifact@v3
+      with:
+        name: dist-${{ github.sha }}
+        path: dist/
+        
+    - name: 🚀 Deploy to Netlify Production
+      uses: nwtgck/actions-netlify@v2.1
+      with:
+        publish-dir: './dist'
+        production-deploy: true
+        github-token: ${{ secrets.GITHUB_TOKEN }}
+        deploy-message: "Production deployment - ${{ github.sha }}"
+      env:
+        NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+        NETLIFY_SITE_ID: ${{ secrets.NETLIFY_PRODUCTION_SITE_ID }}
+        
+    - name: 📊 Deploy audit server
+      run: |
+        echo "🐳 Deploying audit server..."
+        # Ici vous pourriez déployer le serveur d'audit
+        # docker build -t dgi-audit-server ./audit-server
+        # docker push registry.dgi.ga/audit-server:${{ github.sha }}
+        
+    - name: 🔔 Notify deployment
+      uses: 8398a7/action-slack@v3
+      with:
+        status: custom
+        custom_payload: |
+          {
+            text: "✅ DGI Access Application déployée en production!",
+            attachments: [{
+              color: 'good',
+              fields: [{
+                title: 'Commit',
+                value: '${{ github.sha }}',
+                short: true
+              }, {
+                title: 'Branch',
+                value: '${{ github.ref }}',
+                short: true
+              }]
+            }]
+          }
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
+  # Job 7: Tests post-déploiement
+  smoke-tests:
+    name: Tests de Smoke
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    needs: deploy-production
+    
+    steps:
+    - name: 📥 Checkout code
+      uses: actions/checkout@v4
+      
+    - name: 🏗 Setup Bun
+      uses: oven-sh/setup-bun@v1
+      with:
+        bun-version: ${{ env.BUN_VERSION }}
+        
+    - name: 🧪 Run smoke tests
+      run: |
+        echo "🔍 Testing production deployment..."
+        curl -f https://access.dgi.ga || exit 1
+        curl -f https://access.dgi.ga/health || echo "Health endpoint not found"
+        
+    - name: 🔔 Notify on failure
+      if: failure()
+      uses: 8398a7/action-slack@v3
+      with:
+        status: failure
+        text: "❌ Tests de smoke échoués pour DGI Access Application"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
