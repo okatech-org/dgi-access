@@ -25,6 +25,7 @@ export const SimpleSidebar: React.FC<SimpleSidebarProps> = ({
   const sidebarItems: SidebarItem[] = [
     { icon: Users, label: 'Personnel', path: 'personnel', adminOnly: true },
     { icon: UserPlus, label: 'Visiteurs', path: 'visitors' },
+    { icon: UserPlus, label: 'Réception', path: 'reception' },
     { icon: Badge, label: 'Badges', path: 'badges' },
     { icon: FileText, label: 'Rapports', path: 'reports', adminOnly: true }
   ];

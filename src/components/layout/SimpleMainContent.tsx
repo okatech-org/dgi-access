@@ -4,6 +4,8 @@ import { PersonnelModule } from '../modules/PersonnelModule';
 import { VisitorModuleSimple } from '../modules/VisitorModuleSimple';
 import { ReportsModule } from '../modules/ReportsModule';
 import { BadgeManagementModule } from '../modules/BadgeManagementModule';
+import { ReceptionVisitorForm } from '../modules/ReceptionVisitorForm';
+import { AdminReceptionForm } from '../modules/AdminReceptionForm';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SimpleMainContentProps {
@@ -129,6 +131,31 @@ export const SimpleMainContent: React.FC<SimpleMainContentProps> = ({
         )}
         
         <Route path="/visitors" element={<VisitorModuleSimple />} />
+        <Route path="/reception" element={
+          <div className="p-6">
+            <div className="max-w-7xl mx-auto">
+              {user?.role === 'ADMIN' ? (
+                <AdminReceptionForm onSubmit={(visitorData) => {
+                  console.log('Visiteur enregistré par admin:', visitorData);
+                  alert('✅ Visiteur enregistré avec succès ! Badge prêt pour impression.');
+                }} />
+              ) : (
+                <>
+                  <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-6">
+                    <h1 className="text-2xl font-bold">Module Réception DGI</h1>
+                    <p className="text-blue-100 mt-1">
+                      Enregistrement visiteurs avec traçabilité personnel DGI
+                    </p>
+                  </div>
+                  <ReceptionVisitorForm onSubmit={(visitorData) => {
+                    console.log('Visiteur enregistré:', visitorData);
+                    alert('✅ Visiteur enregistré avec succès ! Badge prêt pour impression.');
+                  }} />
+                </>
+              )}
+            </div>
+          </div>
+        } />
         <Route path="/badges" element={<BadgeManagementModule />} />
         
         {user?.role === 'ADMIN' && (

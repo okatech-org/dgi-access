@@ -4,6 +4,9 @@ import { Visitor } from '../../types/visitor';
 import { Employee, Service } from '../../types/personnel';
 import { db } from '../../services/database';
 import { TYPICAL_COMPANIES } from '../../data/dgi-sample-visitors';
+import { ReceptionVisitorForm } from './ReceptionVisitorForm';
+import { useAuth } from '../../contexts/AuthContext';
+import { useLocation } from 'react-router-dom';
 
 interface StatCardProps {
   title: string;
@@ -563,6 +566,13 @@ const TodayVisitors: React.FC<TodayVisitorsProps> = ({
 };
 
 export const VisitorModuleSimple: React.FC = () => {
+  const { user } = useAuth();
+  const location = useLocation();
+  
+  // Détermine si on est sur la route réception
+  const isReceptionRoute = location.pathname.includes('/reception');
+  const isReception = user?.role === 'RECEPTION' || isReceptionRoute;
+  
   const [visitors, setVisitors] = useState<Visitor[]>([]);
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [services, setServices] = useState<Service[]>([]);
@@ -580,6 +590,8 @@ export const VisitorModuleSimple: React.FC = () => {
 
   const loadData = async () => {
     await db.initializeDefaultData();
+    await db.initializeDGIEmployees();
+    
     const visitorsData = db.getTodayVisitors();
     const employeesData = db.getEmployees();
     const servicesData = db.getServices();
@@ -607,8 +619,19 @@ export const VisitorModuleSimple: React.FC = () => {
     await db.saveVisitor(visitor);
     loadData();
     
-    // Simuler l'impression du badge
-    alert(`Badge généré: ${visitor.badgeNumber}\nVisiteur: ${visitor.firstName} ${visitor.lastName}\nÀ imprimer maintenant.`);
+    // Confirmation avec détails de l'employé DGI
+    const employee = employees.find(e => e.id === visitor.employeeToVisit);
+    const service = services.find(s => s.id === visitor.serviceToVisit);
+    
+    alert(`✅ Visiteur enregistré avec succès !
+    
+Badge: ${visitor.badgeNumber}
+Visiteur: ${visitor.firstName} ${visitor.lastName}
+À rencontrer: ${employee ? `${employee.firstName} ${employee.lastName}` : 'Employé non trouvé'}
+Service: ${service ? service.name : 'Service non trouvé'}
+Bureau: ${employee ? `Bureau ${employee.office}, ${employee.floor}` : 'N/A'}
+
+🖨️ Badge prêt pour impression`);
   };
 
   const handleCheckOut = async (visitorId: string) => {
@@ -653,11 +676,15 @@ export const VisitorModuleSimple: React.FC = () => {
         />
       </div>
 
-      <VisitorRegistrationForm
-        employees={employees}
-        services={services}
-        onSubmit={handleRegisterVisitor}
-      />
+      {isReception ? (
+        <ReceptionVisitorForm onSubmit={handleRegisterVisitor} />
+      ) : (
+        <VisitorRegistrationForm
+          employees={employees}
+          services={services}
+          onSubmit={handleRegisterVisitor}
+        />
+      )}
 
       <TodayVisitors
         visitors={visitors}
