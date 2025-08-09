@@ -7,7 +7,7 @@ import {
 import { Employee, Service } from '../../types/personnel';
 import { Visitor } from '../../types/visitor';
 import { db } from '../../services/database';
-import { TYPICAL_COMPANIES, TYPICAL_VISIT_PURPOSES } from '../../data/dgi-sample-visitors';
+import { TYPICAL_VISIT_PURPOSES, FAMILY_RELATIONSHIP_TYPES } from '../../data/dgi-sample-visitors';
 
 interface AdminReceptionFormProps {
   onSubmit: (visitor: Omit<Visitor, 'id' | 'checkInTime' | 'badgeNumber'>) => void;
@@ -265,21 +265,32 @@ const CompanyGrid: React.FC<{
     company.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Ajouter l'option "Autre" à la fin de la liste filtrée
+  const allOptions = [...filteredCompanies, 'Autre'];
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
-      {filteredCompanies.map(company => (
+      {allOptions.map(company => (
         <div
           key={company}
           onClick={() => onSelect(company)}
           className={`p-2 border rounded-lg cursor-pointer transition-all text-sm ${
             selectedCompany === company
               ? 'border-blue-500 bg-blue-50 text-blue-900'
-              : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              : company === 'Autre'
+                ? 'border-orange-300 bg-orange-50 hover:border-orange-400 hover:bg-orange-100'
+                : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
           }`}
         >
           <div className="flex items-center gap-2">
-            <Building2 className="w-4 h-4 text-gray-400 flex-shrink-0" />
-            <span className="truncate">{company}</span>
+            <Building2 className={`w-4 h-4 flex-shrink-0 ${
+              company === 'Autre' ? 'text-orange-500' : 'text-gray-400'
+            }`} />
+            <span className={`truncate ${
+              company === 'Autre' ? 'font-medium text-orange-700' : ''
+            }`}>
+              {company}
+            </span>
             {selectedCompany === company && (
               <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0 ml-auto" />
             )}
@@ -448,10 +459,13 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
   const [selectedService, setSelectedService] = useState<Service | null>(null);
   const [selectedCompany, setSelectedCompany] = useState('');
   const [selectedPurpose, setSelectedPurpose] = useState('');
+  const [selectedRelationshipType, setSelectedRelationshipType] = useState('');
   
   // États de recherche
   const [employeeSearchTerm, setEmployeeSearchTerm] = useState('');
   const [companySearchTerm, setCompanySearchTerm] = useState('');
+  const [showOtherCompany, setShowOtherCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
   
   // États des grilles
   const [showEmployeeGrid, setShowEmployeeGrid] = useState(false);
@@ -506,14 +520,46 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
   };
 
   const handleCompanySelect = (company: string) => {
-    setSelectedCompany(company);
-    setCompanySearchTerm(company);
+    if (company === 'Autre') {
+      setShowOtherCompany(true);
+      setSelectedCompany('');
+      setCompanySearchTerm('');
+    } else {
+      setSelectedCompany(company);
+      setCompanySearchTerm(company);
+      setShowOtherCompany(false);
+    }
     setShowCompanyGrid(false);
+  };
+
+  const handleSaveNewCompany = async () => {
+    if (newCompanyName.trim()) {
+      await db.saveCompany(newCompanyName.trim());
+      setSelectedCompany(newCompanyName.trim());
+      setCompanySearchTerm(newCompanyName.trim());
+      setNewCompanyName('');
+      setShowOtherCompany(false);
+    }
+  };
+
+  const handleCancelNewCompany = () => {
+    setNewCompanyName('');
+    setShowOtherCompany(false);
+    setSelectedCompany('');
+    setCompanySearchTerm('');
   };
 
   const handlePurposeSelect = (purpose: string) => {
     setSelectedPurpose(purpose);
     setShowPurposeGrid(false);
+    // Réinitialiser le type de parenté si ce n'est pas une visite parent
+    if (purpose !== 'Visite Parent') {
+      setSelectedRelationshipType('');
+    }
+  };
+
+  const handleRelationshipTypeSelect = (relationshipType: string) => {
+    setSelectedRelationshipType(relationshipType);
   };
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -534,6 +580,11 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
       return;
     }
 
+    if (selectedPurpose === 'Visite Parent' && !selectedRelationshipType) {
+      alert('⚠️ Veuillez sélectionner le type de parenté pour la visite parent');
+      return;
+    }
+
     const visitor: Omit<Visitor, 'id' | 'checkInTime' | 'badgeNumber'> = {
       firstName: formData.firstName,
       lastName: formData.lastName,
@@ -542,12 +593,30 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
       email: formData.email || undefined,
       idType: formData.idType,
       idNumber: formData.idNumber,
-      purpose: selectedPurpose,
+      purpose: selectedPurpose === 'Visite Parent' && selectedRelationshipType 
+        ? `${selectedPurpose} (${selectedRelationshipType})` 
+        : selectedPurpose,
       employeeToVisit: selectedEmployee.id,
       serviceToVisit: selectedEmployee.service.id,
       status: 'checked-in',
       expectedDuration: formData.expectedDuration
     };
+
+    // 🎯 DÉTECTION AUTOMATIQUE DES RENDEZ-VOUS
+    const today = new Date().toISOString().split('T')[0];
+    const visitorName = `${formData.firstName} ${formData.lastName}`;
+    const employeeName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+    
+    // Chercher un rendez-vous en attente pour ce visiteur
+    const pendingAppointment = db.findPendingAppointmentForVisitor(visitorName, employeeName, today);
+    
+    if (pendingAppointment) {
+      // Marquer automatiquement le rendez-vous comme effectué
+      db.updateAppointmentStatus(pendingAppointment.id, 'completed');
+      
+      // Notifier l'utilisateur
+      alert(`✅ Rendez-vous détecté et marqué comme effectué automatiquement !\n\nRendez-vous: ${pendingAppointment.purpose}\nHeure prévue: ${pendingAppointment.time}\nAgent: ${pendingAppointment.agent}`);
+    }
 
     onSubmit(visitor);
     
@@ -565,6 +634,7 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
     setSelectedService(null);
     setSelectedCompany('');
     setSelectedPurpose('');
+    setSelectedRelationshipType('');
     setEmployeeSearchTerm('');
     setCompanySearchTerm('');
   };
@@ -688,7 +758,7 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
             <Building2 className="w-5 h-5 text-blue-600" />
-            Société / Organisation ({TYPICAL_COMPANIES.length} entreprises gabonaises)
+            Société / Organisation ({db.getAllCompanies().length} entreprises gabonaises)
           </h3>
           
           <div className="space-y-4">
@@ -726,11 +796,46 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
             {showCompanyGrid && (
               <div className="border border-gray-200 rounded-lg p-4 bg-white">
                 <CompanyGrid
-                  companies={TYPICAL_COMPANIES}
+                  companies={db.getAllCompanies()}
                   onSelect={handleCompanySelect}
                   selectedCompany={selectedCompany}
                   searchTerm={companySearchTerm}
                 />
+              </div>
+            )}
+
+            {/* Interface pour ajouter une nouvelle société */}
+            {showOtherCompany && (
+              <div className="mt-4 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                <h4 className="text-lg font-medium text-orange-800 mb-3 flex items-center gap-2">
+                  <Building2 className="w-5 h-5 text-orange-600" />
+                  Ajouter une nouvelle société
+                </h4>
+                <div className="space-y-3">
+                  <input
+                    type="text"
+                    value={newCompanyName}
+                    onChange={(e) => setNewCompanyName(e.target.value)}
+                    placeholder="Nom de la nouvelle société..."
+                    className="w-full px-4 py-3 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500 text-sm"
+                  />
+                  <div className="flex gap-3">
+                    <button
+                      type="button"
+                      onClick={handleSaveNewCompany}
+                      className="flex-1 px-4 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                    >
+                      Sauvegarder et Sélectionner
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleCancelNewCompany}
+                      className="flex-1 px-4 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                    >
+                      Annuler
+                    </button>
+                  </div>
+                </div>
               </div>
             )}
           </div>
@@ -917,6 +1022,55 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
           </div>
         </div>
 
+        {/* Sélection du type de parenté pour visite parent */}
+        {selectedPurpose === 'Visite Parent' && (
+          <div className="bg-pink-50 p-6 rounded-lg border border-pink-200">
+            <h3 className="text-lg font-semibold text-pink-900 mb-4 flex items-center gap-2">
+              <User className="w-5 h-5 text-pink-700" />
+              Type de Parenté * (requis pour visite parent)
+            </h3>
+            
+            <div className="space-y-4">
+              <div>
+                <select
+                  value={selectedRelationshipType}
+                  onChange={(e) => handleRelationshipTypeSelect(e.target.value)}
+                  className={`${inputClass} ${!selectedRelationshipType ? 'border-red-300' : ''}`}
+                  required
+                >
+                  <option value="">Sélectionnez le type de parenté...</option>
+                  {FAMILY_RELATIONSHIP_TYPES.map(relationshipType => (
+                    <option key={relationshipType} value={relationshipType}>
+                      {relationshipType}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              
+              {selectedRelationshipType && (
+                <div className="p-3 bg-pink-100 border border-pink-300 rounded-lg">
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-pink-600" />
+                    <span className="font-medium text-pink-900">
+                      Parenté sélectionnée: {selectedRelationshipType}
+                    </span>
+                  </div>
+                </div>
+              )}
+              
+              <div className="text-sm text-pink-700 bg-pink-100 p-3 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <AlertCircle className="w-4 h-4 text-pink-600 flex-shrink-0 mt-0.5" />
+                  <div>
+                    <p className="font-medium">Information importante :</p>
+                    <p>La visite parent nécessite la spécification du lien de parenté avec l'employé DGI visité pour des raisons de sécurité et de traçabilité.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Durée et validation */}
         <div className="bg-gray-50 p-6 rounded-lg">
           <h3 className="text-lg font-semibold text-gray-900 mb-4 flex items-center gap-2">
@@ -979,7 +1133,7 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
             <div className="text-green-800">Services DGI</div>
           </div>
           <div className="p-3 bg-purple-50 rounded-lg">
-            <div className="font-bold text-xl text-purple-600">{TYPICAL_COMPANIES.length}</div>
+            <div className="font-bold text-xl text-purple-600">{db.getAllCompanies().length}</div>
             <div className="text-purple-800">Entreprises</div>
           </div>
           <div className="p-3 bg-orange-50 rounded-lg">

@@ -1,12 +1,16 @@
 import { Employee, Service, EmployeeStats, ServiceStats } from '../types/personnel';
 import { Visitor, VisitorStats, DailyReport } from '../types/visitor';
+import { Appointment, AppointmentStats, AppointmentStatus } from '../types/appointment';
+import { TYPICAL_COMPANIES } from '../data/dgi-sample-visitors';
 
 class DatabaseService {
   private readonly STORAGE_KEYS = {
     EMPLOYEES: 'dgi_employees',
     SERVICES: 'dgi_services', 
     VISITORS: 'dgi_visitors',
-    BADGES: 'dgi_badges'
+    BADGES: 'dgi_badges',
+    COMPANIES: 'dgi_companies',
+    APPOINTMENTS: 'dgi_appointments'
   };
 
   // ===== EMPLOYEES =====
@@ -91,6 +95,41 @@ class DatabaseService {
     const services = this.getServices();
     const filtered = services.filter(s => s.id !== id);
     localStorage.setItem(this.STORAGE_KEYS.SERVICES, JSON.stringify(filtered));
+  }
+
+  // ===== COMPANIES =====
+  
+  async saveCompany(company: string): Promise<void> {
+    const companies = this.getCompanies();
+    if (!companies.includes(company)) {
+      companies.push(company);
+      localStorage.setItem(this.STORAGE_KEYS.COMPANIES, JSON.stringify(companies));
+    }
+  }
+
+  getCompanies(): string[] {
+    const data = localStorage.getItem(this.STORAGE_KEYS.COMPANIES);
+    return data ? JSON.parse(data) : [];
+  }
+
+  getAllCompanies(): string[] {
+    const customCompanies = this.getCompanies();
+    return [...TYPICAL_COMPANIES, ...customCompanies];
+  }
+
+  searchCompanies(query: string): string[] {
+    const allCompanies = this.getAllCompanies();
+    const lowQuery = query.toLowerCase();
+    
+    return allCompanies.filter(company => 
+      company.toLowerCase().includes(lowQuery)
+    );
+  }
+
+  async deleteCompany(company: string): Promise<void> {
+    const companies = this.getCompanies();
+    const filtered = companies.filter(c => c !== company);
+    localStorage.setItem(this.STORAGE_KEYS.COMPANIES, JSON.stringify(filtered));
   }
 
   // ===== VISITORS =====
@@ -278,6 +317,110 @@ class DatabaseService {
       topServices,
       topEmployees,
       averageVisitDuration: `${avgDurationMinutes} minutes`
+    };
+  }
+
+  // ===== APPOINTMENTS =====
+
+  async saveAppointment(appointment: Appointment): Promise<void> {
+    const appointments = this.getAppointments();
+    const existingIndex = appointments.findIndex(a => a.id === appointment.id);
+    
+    if (existingIndex >= 0) {
+      appointments[existingIndex] = { ...appointment, lastUpdated: new Date().toISOString() };
+    } else {
+      appointments.push({ 
+        ...appointment, 
+        createdAt: new Date().toISOString(),
+        lastUpdated: new Date().toISOString()
+      });
+    }
+    
+    localStorage.setItem(this.STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+  }
+
+  getAppointments(): Appointment[] {
+    const data = localStorage.getItem(this.STORAGE_KEYS.APPOINTMENTS);
+    return data ? JSON.parse(data) : [];
+  }
+
+  getAppointmentById(id: string): Appointment | null {
+    const appointments = this.getAppointments();
+    return appointments.find(a => a.id === id) || null;
+  }
+
+  getAppointmentsByDate(date: string): Appointment[] {
+    return this.getAppointments().filter(a => a.date === date);
+  }
+
+  getAppointmentsByEmployee(employeeName: string): Appointment[] {
+    return this.getAppointments().filter(a => a.agent === employeeName);
+  }
+
+  getAppointmentsByStatus(status: AppointmentStatus): Appointment[] {
+    return this.getAppointments().filter(a => a.status === status);
+  }
+
+  async updateAppointmentStatus(appointmentId: string, status: AppointmentStatus): Promise<void> {
+    const appointments = this.getAppointments();
+    const appointmentIndex = appointments.findIndex(a => a.id === appointmentId);
+    
+    if (appointmentIndex >= 0) {
+      appointments[appointmentIndex].status = status;
+      appointments[appointmentIndex].lastUpdated = new Date().toISOString();
+      localStorage.setItem(this.STORAGE_KEYS.APPOINTMENTS, JSON.stringify(appointments));
+    }
+  }
+
+  async deleteAppointment(id: string): Promise<void> {
+    const appointments = this.getAppointments();
+    const filtered = appointments.filter(a => a.id !== id);
+    localStorage.setItem(this.STORAGE_KEYS.APPOINTMENTS, JSON.stringify(filtered));
+  }
+
+  searchAppointments(query: string): Appointment[] {
+    const appointments = this.getAppointments();
+    const lowQuery = query.toLowerCase();
+    
+    return appointments.filter(appointment => 
+      appointment.citizenName.toLowerCase().includes(lowQuery) ||
+      appointment.agent.toLowerCase().includes(lowQuery) ||
+      appointment.purpose.toLowerCase().includes(lowQuery) ||
+      appointment.service.toLowerCase().includes(lowQuery)
+    );
+  }
+
+  // Méthode clé pour détecter automatiquement les rendez-vous
+  findPendingAppointmentForVisitor(visitorName: string, employeeName: string, date: string): Appointment | null {
+    const appointments = this.getAppointments();
+    
+    return appointments.find(appointment => 
+      appointment.citizenName.toLowerCase().includes(visitorName.toLowerCase()) &&
+      appointment.agent.toLowerCase().includes(employeeName.toLowerCase()) &&
+      appointment.date === date &&
+      (appointment.status === 'confirmed' || appointment.status === 'pending')
+    ) || null;
+  }
+
+  getTodayAppointments(): Appointment[] {
+    const today = new Date().toISOString().split('T')[0];
+    return this.getAppointmentsByDate(today);
+  }
+
+  getAppointmentStats(): AppointmentStats {
+    const appointments = this.getAppointments();
+    const today = new Date().toISOString().split('T')[0];
+    const todayAppointments = this.getAppointmentsByDate(today);
+
+    return {
+      total: appointments.length,
+      today: todayAppointments.length,
+      pending: appointments.filter(a => a.status === 'pending').length,
+      confirmed: appointments.filter(a => a.status === 'confirmed').length,
+      arrived: appointments.filter(a => a.status === 'arrived').length,
+      completed: appointments.filter(a => a.status === 'completed').length,
+      cancelled: appointments.filter(a => a.status === 'cancelled').length,
+      noShow: appointments.filter(a => a.status === 'no_show').length
     };
   }
 

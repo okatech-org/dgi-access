@@ -51,8 +51,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
     const roleItems: Record<string, { id: string, label: string, icon: any, color: string, description?: string }[]> = {
       ADMIN: [
         { id: 'users', label: 'Utilisateurs', icon: Users, color: 'text-purple-600' },
-        { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600' },
-        { id: 'visitors', label: 'Visites', icon: UserPlus, color: 'text-blue-600' },
+        { id: 'visitors', label: 'Gestion des Visiteurs', icon: UserPlus, color: 'text-blue-600' },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600' },
         { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600' },
         { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600' },
@@ -61,8 +60,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
         { id: 'system-settings', label: 'Paramètres', icon: Settings, color: 'text-gray-600' },
       ],
       RECEPTION: [
-        { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600', description: 'Entrées/Sorties & badges' },
-        { id: 'visitors', label: 'Visites', icon: UserPlus, color: 'text-blue-600', description: 'Visiteurs & historiques' },
+        { id: 'visitors', label: 'Gestion des Visiteurs', icon: UserPlus, color: 'text-blue-600', description: 'Enregistrement, historique & badges' },
         { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600', description: 'Planification des visites' },
         { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600', description: 'Réception et suivi' },
         { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600', description: 'Création & révocation' },

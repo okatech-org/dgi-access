@@ -1,807 +1,843 @@
-import React, { useState } from 'react';
-import { 
-  Calendar, Clock, User, CheckCircle, XCircle, AlertTriangle, Plus,
-  Search, Filter, Eye, ArrowLeft, ArrowRight, ChevronDown, ChevronUp,
-  Calendar as CalendarIcon, ClipboardList, CalendarCheck, CalendarPlus,
-  Info, FileText
-} from 'lucide-react';
-import { appointmentsData, getAppointmentStats } from '../../data/appointmentsData';
-import { Appointment } from '../../types/appointment';
-
-// Interface pour les rendez-vous
-// Interface moved to src/types/appointment.ts
+import React, { useState, useEffect } from 'react';
+import { Calendar, Clock, Plus, Search, User, Phone, Building2, Eye, Check, X, AlertCircle, UserCheck, Clock3, CheckCircle } from 'lucide-react';
+import { Appointment, AppointmentFormData, AppointmentStatus } from '../../types/appointment';
+import { Employee } from '../../types/personnel';
+import { db } from '../../services/database';
+import { TYPICAL_VISIT_PURPOSES, FAMILY_RELATIONSHIP_TYPES } from '../../data/dgi-sample-visitors';
 
 export const AppointmentsModule: React.FC = () => {
-  const today = new Date();
-  const [selectedDate, setSelectedDate] = useState(today.toISOString().split('T')[0]);
-  const [filterStatus, setFilterStatus] = useState('all');
-  const [activeCategory, setActiveCategory] = useState<'past' | 'current' | 'future'>('current');
-  const [expandedAppointment, setExpandedAppointment] = useState<string | null>(null);
+  const [appointments, setAppointments] = useState<Appointment[]>([]);
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [showAddModal, setShowAddModal] = useState(false);
-  const [creationError, setCreationError] = useState<string | null>(null);
-  const [isCreating, setIsCreating] = useState(false);
-  
-  // Utiliser les données d'appointmentsData.ts
-  const allAppointments = appointmentsData;
+  const [dateFilter, setDateFilter] = useState('today');
+  const [statusFilter, setStatusFilter] = useState<AppointmentStatus | 'all'>('all');
 
-  // Fonction pour déterminer si une date est aujourd'hui
-  const isToday = (dateStr: string) => {
-    const today = new Date();
-    const date = new Date(dateStr);
-    return (
-      date.getDate() === today.getDate() &&
-      date.getMonth() === today.getMonth() &&
-      date.getFullYear() === today.getFullYear()
-    );
+  const [formData, setFormData] = useState<AppointmentFormData>({
+    citizenName: '',
+    citizenPhone: '',
+    citizenEmail: '',
+    date: '',
+    time: '',
+    duration: 60,
+    service: '',
+    purpose: '',
+    agent: '',
+    priority: 'normal',
+    notes: ''
+  });
+
+  const [errors, setErrors] = useState<Record<string, string>>({});
+
+  // États pour la gestion des motifs de visite
+  const [showPurposeGrid, setShowPurposeGrid] = useState(false);
+  const [selectedPurpose, setSelectedPurpose] = useState('');
+  const [selectedRelationshipType, setSelectedRelationshipType] = useState('');
+
+  // Charger les données initiales
+  useEffect(() => {
+    const loadData = async () => {
+      setLoading(true);
+      try {
+        const appointmentsData = db.getAppointments();
+        const employeesData = db.getEmployees();
+        
+        setAppointments(appointmentsData);
+        setEmployees(employeesData);
+      } catch (error) {
+        console.error('Erreur lors du chargement des données:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadData();
+  }, []);
+
+  // Génération d'ID unique
+  const generateAppointmentId = (): string => {
+    return `rdv-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   };
 
-  // Fonction pour déterminer si une date est dans le futur
-  const isFuture = (dateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const date = new Date(dateStr);
-    date.setHours(0, 0, 0, 0);
-    return date > today;
+  // Validation du formulaire
+  const validateForm = (): boolean => {
+    const newErrors: Record<string, string> = {};
+
+    if (!formData.citizenName.trim()) {
+      newErrors.citizenName = 'Le nom du visiteur est obligatoire';
+    }
+    if (!formData.citizenPhone.trim()) {
+      newErrors.citizenPhone = 'Le téléphone est obligatoire';
+    }
+    if (!formData.date) {
+      newErrors.date = 'La date est obligatoire';
+    }
+    if (!formData.time) {
+      newErrors.time = 'L\'heure est obligatoire';
+    }
+    if (!formData.purpose.trim()) {
+      newErrors.purpose = 'Le motif est obligatoire';
+    }
+    // Validation spéciale pour "Visite Parent"
+    if (selectedPurpose === 'Visite Parent' && !selectedRelationshipType) {
+      newErrors.purpose = 'Veuillez sélectionner le type de parenté pour la visite parent';
+    }
+    if (!formData.agent) {
+      newErrors.agent = 'L\'agent à rencontrer est obligatoire';
+    }
+    if (!formData.service.trim()) {
+      newErrors.service = 'Le service est obligatoire';
+    }
+
+    setErrors(newErrors);
+    return Object.keys(newErrors).length === 0;
   };
 
-  // Fonction pour déterminer si une date est dans le passé
-  const isPast = (dateStr: string) => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const date = new Date(dateStr);
-    date.setHours(0, 0, 0, 0);
-    return date < today;
-  };
+  // Gestion des changements de formulaire
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({
+      ...prev,
+      [name]: name === 'duration' ? parseInt(value) : value
+    }));
 
-  // Fonction pour déterminer si un rendez-vous est dans cette semaine
-  const isThisWeek = (dateStr: string) => {
-    const today = new Date();
-    const date = new Date(dateStr);
-    
-    // Début de la semaine (lundi)
-    const startOfWeek = new Date(today);
-    const day = startOfWeek.getDay();
-    const diff = startOfWeek.getDate() - day + (day === 0 ? -6 : 1);
-    startOfWeek.setDate(diff);
-    startOfWeek.setHours(0, 0, 0, 0);
-    
-    // Fin de la semaine (dimanche)
-    const endOfWeek = new Date(startOfWeek);
-    endOfWeek.setDate(startOfWeek.getDate() + 6);
-    endOfWeek.setHours(23, 59, 59, 999);
-    
-    return date >= startOfWeek && date <= endOfWeek;
-  };
-
-  // Get the stats from our helper function
-
-  // Organize appointments by category
-  const pastAppointments = appointmentsData
-    .filter(a => isPast(a.date))
-    .sort((a, b) => new Date(b.date + 'T' + b.time).getTime() - new Date(a.date + 'T' + a.time).getTime());
-  
-  const currentAppointments = appointmentsData
-    .filter(a => isToday(a.date) || (isFuture(a.date) && isThisWeek(a.date)))
-    .sort((a, b) => new Date(a.date + 'T' + a.time).getTime() - new Date(b.date + 'T' + b.time).getTime());
-  
-  const futureAppointments = appointmentsData
-    .filter(a => isFuture(a.date) && !isThisWeek(a.date))
-    .sort((a, b) => new Date(a.date + 'T' + a.time).getTime() - new Date(b.date + 'T' + b.time).getTime());
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'pending':
-        return <Clock className="h-4 w-4 text-yellow-500" />;
-      case 'confirmed':
-        return <CheckCircle className="h-4 w-4 text-green-500" />;
-      case 'arrived':
-        return <User className="h-4 w-4 text-blue-500" />;
-      case 'completed':
-        return <CheckCircle className="h-4 w-4 text-green-600" />;
-      case 'cancelled':
-        return <XCircle className="h-4 w-4 text-red-500" />;
-      case 'no_show':
-        return <AlertTriangle className="h-4 w-4 text-orange-500" />;
-      default:
-        return <Clock className="h-4 w-4 text-gray-500" />;
+    // Effacer l'erreur pour ce champ
+    if (errors[name]) {
+      setErrors(prev => ({ ...prev, [name]: '' }));
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    const labels = {
-      pending: 'En attente',
-      confirmed: 'Confirmé',
-      arrived: 'Présent',
-      completed: 'Terminé',
-      cancelled: 'Annulé',
-      no_show: 'Absent'
-    };
-    return labels[status as keyof typeof labels] || status;
+  // Gestion de l'agent sélectionné
+  const handleAgentSelect = (employeeId: string) => {
+    const selectedEmployee = employees.find(emp => emp.id === employeeId);
+    if (selectedEmployee) {
+      setFormData(prev => ({
+        ...prev,
+        agent: `${selectedEmployee.firstName} ${selectedEmployee.lastName}`,
+        service: selectedEmployee.service.name
+      }));
+    }
   };
 
-  // Filtrer les rendez-vous en fonction de la recherche
-  const filterAppointmentsBySearch = (appointments: Appointment[]) => {
-    if (!searchTerm) return appointments;
-    return appointments.filter(a => 
-      a.citizenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.purpose.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      a.service.toLowerCase().includes(searchTerm.toLowerCase())
+  // Gestion des motifs de visite
+  const handlePurposeSelect = (purpose: string) => {
+    setSelectedPurpose(purpose);
+    setFormData(prev => ({ ...prev, purpose }));
+    setShowPurposeGrid(false);
+    if (purpose !== 'Visite Parent') {
+      setSelectedRelationshipType('');
+    }
+  };
+
+  const handleRelationshipTypeSelect = (relationshipType: string) => {
+    setSelectedRelationshipType(relationshipType);
+    const finalPurpose = `Visite Parent (${relationshipType})`;
+    setFormData(prev => ({ ...prev, purpose: finalPurpose }));
+  };
+
+  // Fermer la modale avec réinitialisation
+  const handleCloseModal = () => {
+    setSelectedPurpose('');
+    setSelectedRelationshipType('');
+    setShowPurposeGrid(false);
+    setErrors({});
+    setShowAddForm(false);
+  };
+
+  // Soumettre le formulaire
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!validateForm()) {
+      return;
+    }
+
+    setSubmitting(true);
+
+    try {
+      const newAppointment: Appointment = {
+        id: generateAppointmentId(),
+        ...formData,
+        status: 'pending'
+      };
+
+      await db.saveAppointment(newAppointment);
+      
+      // Recharger les rendez-vous
+      const updatedAppointments = db.getAppointments();
+      setAppointments(updatedAppointments);
+
+      // Réinitialiser le formulaire
+      setFormData({
+        citizenName: '',
+        citizenPhone: '',
+        citizenEmail: '',
+        date: '',
+        time: '',
+        duration: 60,
+        service: '',
+        purpose: '',
+        agent: '',
+        priority: 'normal',
+        notes: ''
+      });
+      
+      // Réinitialiser les états des motifs
+      setSelectedPurpose('');
+      setSelectedRelationshipType('');
+      setShowPurposeGrid(false);
+      
+      setShowAddForm(false);
+      alert('✅ Rendez-vous programmé avec succès !');
+      
+    } catch (error) {
+      console.error('Erreur lors de la création du rendez-vous:', error);
+      alert('❌ Erreur lors de la création du rendez-vous');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  // Changer le statut d'un rendez-vous
+  const handleStatusChange = async (appointmentId: string, newStatus: AppointmentStatus) => {
+    try {
+      await db.updateAppointmentStatus(appointmentId, newStatus);
+      
+      // Recharger les rendez-vous
+      const updatedAppointments = db.getAppointments();
+      setAppointments(updatedAppointments);
+      
+      const statusLabels = {
+        'pending': 'En attente',
+        'confirmed': 'Confirmé',
+        'arrived': 'Arrivé',
+        'completed': 'Terminé',
+        'cancelled': 'Annulé',
+        'no_show': 'Absent'
+      };
+      
+      alert(`✅ Statut mis à jour: ${statusLabels[newStatus]}`);
+      
+    } catch (error) {
+      console.error('Erreur lors de la mise à jour du statut:', error);
+      alert('❌ Erreur lors de la mise à jour');
+    }
+  };
+
+  // Filtrer les rendez-vous
+  const filteredAppointments = appointments.filter(appointment => {
+    const today = new Date().toISOString().split('T')[0];
+    
+    // Filtre par date
+    let dateMatch = true;
+    if (dateFilter === 'today') {
+      dateMatch = appointment.date === today;
+    } else if (dateFilter === 'week') {
+      const appointmentDate = new Date(appointment.date);
+      const weekFromNow = new Date();
+      weekFromNow.setDate(weekFromNow.getDate() + 7);
+      dateMatch = appointmentDate >= new Date() && appointmentDate <= weekFromNow;
+    }
+
+    // Filtre par statut
+    const statusMatch = statusFilter === 'all' || appointment.status === statusFilter;
+
+    // Filtre par recherche
+    const searchMatch = !searchTerm || 
+      appointment.citizenName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.agent.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      appointment.purpose.toLowerCase().includes(searchTerm.toLowerCase());
+
+    return dateMatch && statusMatch && searchMatch;
+  });
+
+  // Obtenir les statistiques
+  const stats = db.getAppointmentStats();
+
+  // Classes CSS
+  const inputClass = "w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm";
+  const buttonClass = "px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium";
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+        <span className="ml-3 text-gray-600">Chargement des rendez-vous...</span>
+      </div>
     );
-  };
-
-  const getStatusColor = (status: string) => {
-    const colors = {
-      pending: 'bg-yellow-100 text-yellow-800',
-      confirmed: 'bg-green-100 text-green-800',
-      arrived: 'bg-blue-100 text-blue-800',
-      completed: 'bg-green-100 text-green-800',
-      cancelled: 'bg-red-100 text-red-800',
-      no_show: 'bg-orange-100 text-orange-800'
-    };
-    return colors[status as keyof typeof colors] || 'bg-gray-100 text-gray-800';
-  };
-
-  // Appliquer le filtre par statut à la liste d'origine pour les statistiques
-  const filteredAppointmentsByStatus = (appointments: Appointment[]) => {
-    if (filterStatus === 'all') return appointments;
-    return appointments.filter(a => a.status === filterStatus);
-  };
-
-  // Filtres combinés
-  const filteredPastAppointments = filterAppointmentsBySearch(filteredAppointmentsByStatus(pastAppointments));
-  const filteredCurrentAppointments = filterAppointmentsBySearch(filteredAppointmentsByStatus(currentAppointments));
-  const filteredFutureAppointments = filterAppointmentsBySearch(filteredAppointmentsByStatus(futureAppointments));
-
-  // Statistiques de rendez-vous
-  const appointmentStats = {
-    total: allAppointments.length,
-    confirmed: allAppointments.filter(a => a.status === 'confirmed').length,
-    completed: allAppointments.filter(a => a.status === 'completed').length,
-    pending: allAppointments.filter(a => a.status === 'pending').length,
-    cancelled: allAppointments.filter(a => a.status === 'cancelled').length,
-    noShow: allAppointments.filter(a => a.status === 'no_show').length,
-    todayCount: allAppointments.filter(a => isToday(a.date)).length,
-    thisWeekCount: allAppointments.filter(a => isThisWeek(a.date)).length,
-    futureCount: allAppointments.filter(a => isFuture(a.date) && !isThisWeek(a.date)).length,
-    pastCount: allAppointments.filter(a => isPast(a.date)).length
-  };
-  
-  // Fonction pour formater une date en français
-  const formatDate = (dateStr: string) => {
-    const options: Intl.DateTimeFormatOptions = { 
-      day: 'numeric', 
-      month: 'long', 
-      year: 'numeric',
-      weekday: 'long'
-    };
-    const date = new Date(dateStr);
-    return date.toLocaleDateString('fr-FR', options);
-  };
-
+  }
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
+    <div className="max-w-6xl mx-auto p-6 space-y-6">
+      {/* En-tête */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Rendez-vous</h1>
-          <p className="text-gray-600">Planification des visites (E‑Tax, NIF, Recouvrement, Attestations)</p>
+          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+            <Calendar className="w-6 h-6 text-blue-600" />
+            Rendez-vous & Planification
+          </h1>
+          <p className="text-gray-600 mt-1">Gestion des visiteurs attendus et planification des visites</p>
         </div>
-        <div className="flex items-center gap-4">
-          <input
-            type="date"
-            value={selectedDate}
-            onChange={(e) => setSelectedDate(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+
           <button
-            onClick={() => setShowAddModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
+          onClick={() => setShowAddForm(true)}
+          className={`${buttonClass} flex items-center gap-2`}
           >
-            <Plus className="h-4 w-4" />
+          <Plus className="w-4 h-4" />
             Nouveau Rendez-vous
           </button>
-        </div>
       </div>
 
-      {/* Cartes de statistiques */}
-      <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Statistiques */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Total</p>
-              <p className="text-2xl font-bold text-gray-900">{appointmentStats.total}</p>
+              <p className="text-blue-800 text-sm font-medium">Aujourd'hui</p>
+              <p className="text-2xl font-bold text-blue-900">{stats.today}</p>
             </div>
-            <Calendar className="h-8 w-8 text-gray-500" />
+            <Calendar className="w-8 h-8 text-blue-600" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+
+        <div className="bg-green-50 p-4 rounded-lg border border-green-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">Aujourd'hui</p>
-              <p className="text-2xl font-bold text-green-600">{appointmentStats.todayCount}</p>
+              <p className="text-green-800 text-sm font-medium">Confirmés</p>
+              <p className="text-2xl font-bold text-green-900">{stats.confirmed}</p>
             </div>
-            <CalendarIcon className="h-8 w-8 text-green-500" />
+            <UserCheck className="w-8 h-8 text-green-600" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+
+        <div className="bg-yellow-50 p-4 rounded-lg border border-yellow-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">En cours</p>
-              <p className="text-2xl font-bold text-blue-600">{appointmentStats.confirmed + appointmentStats.arrived}</p>
+              <p className="text-yellow-800 text-sm font-medium">En attente</p>
+              <p className="text-2xl font-bold text-yellow-900">{stats.pending}</p>
             </div>
-            <User className="h-8 w-8 text-blue-500" />
+            <Clock3 className="w-8 h-8 text-yellow-600" />
           </div>
         </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+
+        <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-sm text-gray-600">À venir</p>
-              <p className="text-2xl font-bold text-yellow-600">{futureAppointments.length}</p>
+              <p className="text-purple-800 text-sm font-medium">Total</p>
+              <p className="text-2xl font-bold text-purple-900">{stats.total}</p>
             </div>
-            <CalendarPlus className="h-8 w-8 text-yellow-500" />
-          </div>
-        </div>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-sm text-gray-600">Passés</p>
-              <p className="text-2xl font-bold text-purple-600">{pastAppointments.length}</p>
-            </div>
-            <ClipboardList className="h-8 w-8 text-purple-500" />
+            <Eye className="w-8 h-8 text-purple-600" />
           </div>
         </div>
       </div>
 
       {/* Filtres et recherche */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-        <div className="flex flex-col sm:flex-row gap-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+      <div className="bg-white p-4 rounded-lg border border-gray-200 space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
             <input
               type="text"
-              placeholder="Rechercher par nom, service ou motif..."
+              placeholder="Rechercher un rendez-vous..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="pl-10 pr-4 py-2 w-full border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
             />
           </div>
+
           <select
-            value={filterStatus}
-            onChange={(e) => setFilterStatus(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+          >
+            <option value="all">Toutes les dates</option>
+            <option value="today">Aujourd'hui</option>
+            <option value="week">Cette semaine</option>
+          </select>
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as AppointmentStatus | 'all')}
+            className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
           >
             <option value="all">Tous les statuts</option>
             <option value="pending">En attente</option>
-            <option value="confirmed">Confirmés</option>
-            <option value="arrived">Présents</option>
-            <option value="completed">Terminés</option>
-            <option value="cancelled">Annulés</option>
-            <option value="no_show">Absents</option>
+            <option value="confirmed">Confirmé</option>
+            <option value="arrived">Arrivé</option>
+            <option value="completed">Terminé</option>
+            <option value="cancelled">Annulé</option>
+            <option value="no_show">Absent</option>
           </select>
-          <button className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-            <Filter className="h-4 w-4" />
-            Filtres
-          </button>
+
+          <div className="text-sm text-gray-600 flex items-center">
+            {filteredAppointments.length} rendez-vous trouvé(s)
+          </div>
         </div>
       </div>
 
-      {/* Modal création RDV */}
-      {showAddModal && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-lg p-6">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-gray-900">Nouveau Rendez-vous</h3>
-              <button onClick={() => setShowAddModal(false)} className="text-gray-500 hover:text-gray-700">✕</button>
-            </div>
-            <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                setCreationError(null);
-                setIsCreating(true);
-                try {
-                  await new Promise(r => setTimeout(r, 700));
-                  setShowAddModal(false);
-                } catch (err) {
-                  setCreationError('Erreur lors de la création du rendez-vous');
-                } finally {
-                  setIsCreating(false);
-                }
-              }}
-              className="space-y-4"
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Citoyen</label>
-                <input required className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Nom complet" />
-              </div>
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Date</label>
-                  <input type="date" required className="mt-1 w-full border rounded-lg px-3 py-2" />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700">Heure</label>
-                  <input type="time" required className="mt-1 w-full border rounded-lg px-3 py-2" />
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700">Service</label>
-                <input required className="mt-1 w-full border rounded-lg px-3 py-2" placeholder="Service concerné" />
-              </div>
-              {creationError && (
-                <div className="text-sm text-red-600">{creationError}</div>
-              )}
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button type="button" onClick={() => setShowAddModal(false)} className="px-4 py-2 rounded-lg border">Annuler</button>
-                <button type="submit" disabled={isCreating} className={`px-4 py-2 rounded-lg text-white ${isCreating ? 'bg-gray-400' : 'bg-blue-600 hover:bg-blue-700'}`}>
-                  {isCreating ? 'Création…' : 'Créer'}
-                </button>
-              </div>
-            </form>
+      {/* Liste des rendez-vous */}
+      <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+        {filteredAppointments.length === 0 ? (
+          <div className="p-12 text-center">
+            <Calendar className="w-16 h-16 text-gray-300 mx-auto mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 mb-2">Aucun rendez-vous trouvé</h3>
+            <p className="text-gray-600">
+              {appointments.length === 0 
+                ? "Commencez par programmer votre premier rendez-vous" 
+                : "Essayez de modifier vos filtres de recherche"
+              }
+            </p>
           </div>
+        ) : (
+          <div className="divide-y divide-gray-200">
+            {filteredAppointments.map((appointment) => (
+              <AppointmentCard
+                key={appointment.id}
+                appointment={appointment}
+                onStatusChange={handleStatusChange}
+              />
+            ))}
         </div>
       )}
-      
-      {/* Navigation entre catégories */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-2">
-        <div className="flex">
-          <button
-            onClick={() => setActiveCategory('past')}
-            className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium ${
-              activeCategory === 'past' 
-                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <ClipboardList className="h-5 w-5" />
-            <span>Historique</span>
-            <span className="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
-              {filteredPastAppointments.length}
-            </span>
-          </button>
-          
-          <button
-            onClick={() => setActiveCategory('current')}
-            className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium ${
-              activeCategory === 'current' 
-                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <CalendarCheck className="h-5 w-5" />
-            <span>Actualité</span>
-            <span className={`${
-              filteredCurrentAppointments.length > 0 
-                ? 'bg-green-100 text-green-800' 
-                : 'bg-gray-200 text-gray-800'
-            } text-xs px-2 py-1 rounded-full`}>
-              {filteredCurrentAppointments.length}
-            </span>
-          </button>
-          
-          <button
-            onClick={() => setActiveCategory('future')}
-            className={`flex-1 py-3 px-4 rounded-lg flex items-center justify-center gap-2 font-medium ${
-              activeCategory === 'future' 
-                ? 'bg-blue-50 text-blue-700 border-b-2 border-blue-600' 
-                : 'text-gray-600 hover:bg-gray-50'
-            }`}
-          >
-            <CalendarPlus className="h-5 w-5" />
-            <span>Avenir</span>
-            <span className="bg-gray-200 text-gray-800 text-xs px-2 py-1 rounded-full">
-              {filteredFutureAppointments.length}
-            </span>
-          </button>
-        </div>
       </div>
 
-      {/* Section 1: HISTORIQUE (Rendez-vous passés) */}
-      {activeCategory === 'past' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Formulaire d'ajout */}
+      {showAddForm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+          <div className="bg-white rounded-lg max-w-2xl w-full max-h-[90vh] overflow-y-auto">
+            <div className="p-6">
           <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-purple-100 rounded-lg p-2">
-                <ClipboardList className="h-5 w-5 text-purple-600" />
+                <h2 className="text-xl font-bold text-gray-900">Nouveau Rendez-vous</h2>
+                <button
+                  onClick={handleCloseModal}
+                  className="text-gray-400 hover:text-gray-600"
+                >
+                  <X className="w-6 h-6" />
+                </button>
               </div>
+
+              <form onSubmit={handleSubmit} className="space-y-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Historique des rendez-vous</h2>
-                <p className="text-sm text-gray-600">Rendez-vous passés classés par ordre chronologique</p>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Nom du visiteur *
+                    </label>
+                    <input
+                      type="text"
+                      name="citizenName"
+                      value={formData.citizenName}
+                      onChange={handleInputChange}
+                      className={`${inputClass} ${errors.citizenName ? 'border-red-300' : ''}`}
+                      placeholder="Nom complet du visiteur"
+                    />
+                    {errors.citizenName && (
+                      <p className="text-red-600 text-xs mt-1">{errors.citizenName}</p>
+                    )}
               </div>
-            </div>
+
             <div>
-              <span className="text-sm text-gray-500">{filteredPastAppointments.length} rendez-vous</span>
-            </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Téléphone *
+                    </label>
+                    <input
+                      type="tel"
+                      name="citizenPhone"
+                      value={formData.citizenPhone}
+                      onChange={handleInputChange}
+                      className={`${inputClass} ${errors.citizenPhone ? 'border-red-300' : ''}`}
+                      placeholder="+241 01 02 03 04"
+                    />
+                    {errors.citizenPhone && (
+                      <p className="text-red-600 text-xs mt-1">{errors.citizenPhone}</p>
+                    )}
           </div>
 
-          {filteredPastAppointments.length > 0 ? (
-            <div className="space-y-4">
-              {filteredPastAppointments.map(appointment => (
-                <div 
-                  key={appointment.id}
-                  className="border border-gray-200 rounded-lg hover:shadow-md transition-all"
-                >
-                  <div 
-                    className="p-4 cursor-pointer flex justify-between items-center"
-                    onClick={() => setExpandedAppointment(expandedAppointment === appointment.id ? null : appointment.id)}
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className={`${
-                        appointment.status === 'completed' ? 'bg-green-100 text-green-700' :
-                        appointment.status === 'cancelled' ? 'bg-red-100 text-red-700' :
-                        appointment.status === 'no_show' ? 'bg-orange-100 text-orange-700' :
-                        'bg-gray-100 text-gray-700'
-                      } p-3 rounded-lg`}>
-                        {getStatusIcon(appointment.status)}
-                      </div>
                       <div>
-                        <div className="flex items-center gap-2">
-                          <p className="font-semibold">{appointment.citizenName}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
-                            {getStatusLabel(appointment.status)}
-                          </span>
-                        </div>
-                        <p className="text-sm text-gray-600">
-                          {formatDate(appointment.date)} - {appointment.time} ({appointment.duration} min)
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <div className="text-right hidden sm:block">
-                        <p className="text-sm font-medium">{appointment.service}</p>
-                        <p className="text-xs text-gray-500">{appointment.purpose}</p>
-                      </div>
-                      <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${
-                        expandedAppointment === appointment.id ? 'rotate-180' : ''
-                      }`} />
-                    </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Email (optionnel)
+                    </label>
+                    <input
+                      type="email"
+                      name="citizenEmail"
+                      value={formData.citizenEmail}
+                      onChange={handleInputChange}
+                      className={inputClass}
+                      placeholder="email@example.com"
+                    />
                   </div>
                   
-                  {expandedAppointment === appointment.id && (
-                    <div className="p-4 bg-gray-50 border-t border-gray-200 rounded-b-lg">
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <h3 className="text-sm font-medium text-gray-700 mb-2">Détails du rendez-vous</h3>
-                          <div className="space-y-1 text-sm">
-                            <p><span className="font-medium">Motif:</span> {appointment.purpose}</p>
-                            <p><span className="font-medium">Service:</span> {appointment.service}</p>
-                            <p><span className="font-medium">Agent assigné:</span> {appointment.agent}</p>
-                          </div>
-                        </div>
-                        <div>
-                          <h3 className="text-sm font-medium text-gray-700 mb-2">Résultat</h3>
-                          <div className="bg-white p-3 rounded border border-gray-200 text-sm min-h-[80px]">
-                            {appointment.status === 'completed' ? (
-                              <div className="flex items-start gap-2">
-                                <CheckCircle className="h-4 w-4 text-green-500 mt-0.5" />
-                                <p>Service {appointment.purpose} complété avec succès pour {appointment.citizenName}.</p>
-                              </div>
-                            ) : appointment.status === 'cancelled' ? (
-                              <div className="flex items-start gap-2">
-                                <XCircle className="h-4 w-4 text-red-500 mt-0.5" />
-                                <p>Rendez-vous annulé. {appointment.notes}</p>
-                              </div>
-                            ) : appointment.status === 'no_show' ? (
-                              <div className="flex items-start gap-2">
-                                <AlertTriangle className="h-4 w-4 text-orange-500 mt-0.5" />
-                                <p>Absence non justifiée. {appointment.notes}</p>
-                              </div>
-                            ) : (
-                              <div className="flex items-start gap-2">
-                                <Info className="h-4 w-4 text-gray-500 mt-0.5" />
-                                <p>{appointment.notes || "Aucune information supplémentaire."}</p>
-                              </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Agent à rencontrer *
+                    </label>
+                    <select
+                      name="agent"
+                      value={formData.agent}
+                      onChange={(e) => handleAgentSelect(e.target.value)}
+                      className={`${inputClass} ${errors.agent ? 'border-red-300' : ''}`}
+                    >
+                      <option value="">Sélectionnez un agent DGI</option>
+                      {employees.map((employee) => (
+                        <option key={employee.id} value={employee.id}>
+                          {employee.firstName} {employee.lastName} - {employee.service.name}
+                        </option>
+                      ))}
+                    </select>
+                    {errors.agent && (
+                      <p className="text-red-600 text-xs mt-1">{errors.agent}</p>
                             )}
                           </div>
-                        </div>
-                      </div>
-                      <div className="mt-4 flex justify-end">
-                        <button className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm">
-                          <FileText className="h-4 w-4" />
-                          Générer récapitulatif
-                        </button>
-                      </div>
-                    </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Date *
+                    </label>
+                    <input
+                      type="date"
+                      name="date"
+                      value={formData.date}
+                      onChange={handleInputChange}
+                      className={`${inputClass} ${errors.date ? 'border-red-300' : ''}`}
+                      min={new Date().toISOString().split('T')[0]}
+                    />
+                    {errors.date && (
+                      <p className="text-red-600 text-xs mt-1">{errors.date}</p>
                   )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 border border-dashed border-gray-300 rounded-lg">
-              <ClipboardList className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 font-medium">Aucun rendez-vous passé trouvé</p>
-              <p className="text-sm text-gray-400">Ajustez les filtres pour voir plus de résultats</p>
-            </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Heure *
+                    </label>
+                    <input
+                      type="time"
+                      name="time"
+                      value={formData.time}
+                      onChange={handleInputChange}
+                      className={`${inputClass} ${errors.time ? 'border-red-300' : ''}`}
+                    />
+                    {errors.time && (
+                      <p className="text-red-600 text-xs mt-1">{errors.time}</p>
           )}
         </div>
-      )}
 
-      {/* Section 2: ACTUALITÉ (Rendez-vous en cours/prévus) */}
-      {activeCategory === 'current' && (
-        <div className="space-y-6">
-          {/* Rendez-vous d'aujourd'hui */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-green-100 rounded-lg p-2">
-                  <CalendarIcon className="h-5 w-5 text-green-600" />
-                </div>
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Aujourd'hui</h2>
-                  <p className="text-sm text-gray-600">{formatDate(today.toISOString().split('T')[0])}</p>
-                </div>
-              </div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Durée (minutes)
+                    </label>
+                    <select
+                      name="duration"
+                      value={formData.duration}
+                      onChange={handleInputChange}
+                      className={inputClass}
+                    >
+                      <option value={30}>30 minutes</option>
+                      <option value={60}>1 heure</option>
+                      <option value={90}>1h 30</option>
+                      <option value={120}>2 heures</option>
+                    </select>
             </div>
 
-            {filteredCurrentAppointments.filter(a => isToday(a.date)).length > 0 ? (
-              <div className="space-y-3">
-                {filteredCurrentAppointments
-                  .filter(a => isToday(a.date))
-                  .map(appointment => (
-                    <div 
-                      key={appointment.id}
-                      className={`bg-white border rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-all ${
-                        appointment.priority === 'urgent' 
-                          ? 'border-l-4 border-l-red-500' 
-                          : appointment.priority === 'high'
-                            ? 'border-l-4 border-l-orange-500'
-                            : ''
-                      }`}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">
+                      Priorité
+                    </label>
+                    <select
+                      name="priority"
+                      value={formData.priority}
+                      onChange={handleInputChange}
+                      className={inputClass}
                     >
-                      <div className="w-16 flex-shrink-0 text-center">
-                        <p className="text-lg font-bold text-gray-900">{appointment.time}</p>
-                        <p className="text-xs text-gray-500">{appointment.duration} min</p>
+                      <option value="normal">Normale</option>
+                      <option value="high">Élevée</option>
+                      <option value="urgent">Urgente</option>
+                    </select>
+                  </div>
                       </div>
                       
-                      <div className="flex-grow">
+                {/* Motif de la visite avec grille de sélection */}
+                <div className="md:col-span-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Motif de la Visite DGI *
+                  </label>
+                  <div className="space-y-4">
+                    <div className="relative">
+                      <button
+                        type="button"
+                        onClick={() => setShowPurposeGrid(!showPurposeGrid)}
+                        className={`w-full px-4 py-3 text-left border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 bg-white hover:bg-gray-50 flex items-center justify-between ${
+                          selectedPurpose ? 'border-green-500 bg-green-50' : ''
+                        }`}
+                      >
+                        <span className={selectedPurpose ? 'text-green-800 font-medium' : 'text-gray-500'}>
+                          {selectedPurpose || 'Sélectionnez un motif de visite...'}
+                        </span>
                         <div className="flex items-center gap-2">
-                          <p className="font-medium text-gray-900">{appointment.citizenName}</p>
-                          <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
-                            {getStatusLabel(appointment.status)}
-                          </span>
-                          {appointment.priority === 'urgent' && (
-                            <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">URGENT</span>
-                          )}
-                          {appointment.priority === 'high' && (
-                            <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full">Prioritaire</span>
-                          )}
+                          {selectedPurpose && <CheckCircle className="w-4 h-4 text-green-600" />}
+                          <AlertCircle className="w-4 h-4 text-gray-400" />
                         </div>
-                        <p className="text-sm text-gray-600 mt-1">{appointment.purpose}</p>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg">
-                          <Eye className="h-5 w-5" />
                         </button>
-                        {appointment.status === 'confirmed' && (
-                          <button className="p-2 text-green-600 hover:text-green-800 hover:bg-green-50 rounded-lg">
-                            <User className="h-5 w-5" />
-                          </button>
-                        )}
-                        {appointment.status === 'arrived' && (
-                          <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg">
-                            <CheckCircle className="h-5 w-5" />
-                          </button>
-                        )}
-                      </div>
+                      {errors.purpose && (
+                        <p className="text-red-600 text-xs mt-1">{errors.purpose}</p>
+                      )}
                     </div>
-                  ))}
-              </div>
-            ) : (
-              <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                <CalendarIcon className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 font-medium">Aucun rendez-vous aujourd'hui</p>
+
+                    {/* Grille des motifs de visite */}
+                    {showPurposeGrid && (
+                      <div className="border border-gray-200 rounded-lg p-4 bg-white shadow-sm">
+                        <h4 className="text-sm font-medium text-gray-800 mb-3">
+                          Sélectionnez le motif de votre visite à la DGI
+                        </h4>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 max-h-48 overflow-y-auto">
+                          {TYPICAL_VISIT_PURPOSES.map(purpose => (
                 <button 
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1 mx-auto"
-                  onClick={() => setShowAddModal(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Ajouter un rendez-vous
-                </button>
-              </div>
+                              key={purpose}
+                              type="button"
+                              onClick={() => handlePurposeSelect(purpose)}
+                              className={`p-3 text-left border rounded-lg text-sm transition-all hover:shadow-sm ${
+                                selectedPurpose === purpose
+                                  ? 'border-blue-500 bg-blue-50 text-blue-900'
+                                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4 text-gray-400 flex-shrink-0" />
+                                <span className="truncate">{purpose}</span>
+                                {selectedPurpose === purpose && (
+                                  <CheckCircle className="w-3 h-3 text-blue-600 flex-shrink-0 ml-auto" />
             )}
           </div>
-          
-          {/* Rendez-vous cette semaine */}
-          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <div className="bg-blue-100 rounded-lg p-2">
-                  <CalendarCheck className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <h2 className="text-xl font-semibold text-gray-900">Cette semaine</h2>
-                  <p className="text-sm text-gray-600">Rendez-vous prévus pour les prochains jours</p>
-                </div>
-              </div>
-            </div>
-
-            {filteredCurrentAppointments.filter(a => !isToday(a.date)).length > 0 ? (
-              <div className="space-y-4">
-                {/* Grouper par date */}
-                {[...new Set(filteredCurrentAppointments.filter(a => !isToday(a.date)).map(a => a.date))].map(date => (
-                  <div key={date} className="space-y-3">
-                    <h3 className="font-medium text-gray-700 bg-gray-50 p-2 rounded">
-                      {formatDate(date)}
-                    </h3>
-                    {filteredCurrentAppointments
-                      .filter(a => a.date === date)
-                      .map(appointment => (
-                        <div 
-                          key={appointment.id}
-                          className={`bg-white border rounded-lg p-4 flex items-center gap-4 hover:shadow-md transition-all ${
-                            appointment.priority === 'urgent' 
-                              ? 'border-l-4 border-l-red-500' 
-                              : appointment.priority === 'high'
-                                ? 'border-l-4 border-l-orange-500'
-                                : ''
-                          }`}
-                        >
-                          <div className="w-16 flex-shrink-0 text-center">
-                            <p className="text-lg font-bold text-gray-900">{appointment.time}</p>
-                            <p className="text-xs text-gray-500">{appointment.duration} min</p>
-                          </div>
-                          
-                          <div className="flex-grow">
-                            <div className="flex items-center gap-2">
-                              <p className="font-medium text-gray-900">{appointment.citizenName}</p>
-                              <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
-                                {getStatusLabel(appointment.status)}
-                              </span>
-                              {appointment.priority === 'urgent' && (
-                                <span className="bg-red-100 text-red-800 text-xs px-2 py-0.5 rounded-full">URGENT</span>
-                              )}
-                              {appointment.priority === 'high' && (
-                                <span className="bg-orange-100 text-orange-800 text-xs px-2 py-0.5 rounded-full">Prioritaire</span>
-                              )}
-                            </div>
-                            <div className="flex items-center justify-between mt-1">
-                              <p className="text-sm text-gray-600">{appointment.purpose}</p>
-                              <p className="text-xs text-gray-500">Agent: {appointment.agent}</p>
-                            </div>
-                          </div>
-                          
-                          <div className="flex items-center gap-2">
-                            <button className="p-2 text-blue-600 hover:text-blue-800 hover:bg-blue-50 rounded-lg">
-                              <Eye className="h-5 w-5" />
                             </button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                ))}
+                          ))}
+                </div>
               </div>
-            ) : (
-              <div className="text-center py-8 border border-dashed border-gray-300 rounded-lg">
-                <CalendarCheck className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-                <p className="text-gray-500 font-medium">Aucun rendez-vous prévu cette semaine</p>
+                    )}
+
+                    {/* Section parenté pour "Visite Parent" */}
+                    {selectedPurpose === 'Visite Parent' && (
+                      <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
+                        <h4 className="text-sm font-medium text-pink-800 mb-2">
+                          <User className="w-4 h-4 inline mr-1" />
+                          Type de Parenté * (requis pour visite parent)
+                        </h4>
+                        <select
+                          value={selectedRelationshipType}
+                          onChange={(e) => handleRelationshipTypeSelect(e.target.value)}
+                          className={`w-full px-3 py-2 border border-pink-300 rounded-lg focus:ring-2 focus:ring-pink-500 focus:border-pink-500 text-sm ${
+                            !selectedRelationshipType ? 'border-red-300' : ''
+                          }`}
+                          required
+                        >
+                          <option value="">Sélectionnez le type de parenté...</option>
+                          {FAMILY_RELATIONSHIP_TYPES.map((relationshipType, index) => (
+                            <option key={index} value={relationshipType}>
+                              {relationshipType}
+                            </option>
+                          ))}
+                        </select>
+                        {selectedRelationshipType && (
+                          <div className="mt-2 p-2 bg-pink-100 border border-pink-300 rounded text-sm">
+                            <div className="flex items-center gap-2">
+                              <CheckCircle className="w-4 h-4 text-pink-600" />
+                              <span className="font-medium text-pink-900">
+                                Parenté sélectionnée: {selectedRelationshipType}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                        <div className="mt-2 text-xs text-pink-700 bg-pink-100 p-2 rounded">
+                          La visite parent nécessite la spécification du lien de parenté avec l'employé DGI pour des raisons de sécurité.
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Notes additionnelles
+                  </label>
+                  <textarea
+                    name="notes"
+                    value={formData.notes}
+                    onChange={handleInputChange}
+                    rows={3}
+                    className={inputClass}
+                    placeholder="Informations complémentaires..."
+                  />
+              </div>
+
+                <div className="flex gap-3 pt-4">
+                  <button
+                    type="button"
+                    onClick={handleCloseModal}
+                    className="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
                 <button 
-                  className="mt-2 text-blue-600 hover:text-blue-800 text-sm flex items-center gap-1 mx-auto"
-                  onClick={() => setShowAddModal(true)}
-                >
-                  <Plus className="h-4 w-4" />
-                  Planifier un rendez-vous
+                    type="submit"
+                    disabled={submitting}
+                    className={`flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2`}
+                  >
+                    {submitting ? (
+                      <>
+                        <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                        Programmation...
+                      </>
+                    ) : (
+                      'Programmer le Rendez-vous'
+                    )}
                 </button>
               </div>
-            )}
+              </form>
+            </div>
           </div>
         </div>
       )}
-      
-      {/* Section 3: AVENIR (Rendez-vous à venir) */}
-      {activeCategory === 'future' && (
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="bg-yellow-100 rounded-lg p-2">
-                <CalendarPlus className="h-5 w-5 text-yellow-600" />
-              </div>
+    </div>
+  );
+};
+
+// Composant pour afficher une carte de rendez-vous
+interface AppointmentCardProps {
+  appointment: Appointment;
+  onStatusChange: (id: string, status: AppointmentStatus) => void;
+}
+
+const AppointmentCard: React.FC<AppointmentCardProps> = ({ appointment, onStatusChange }) => {
+  const getStatusColor = (status: AppointmentStatus) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800 border-yellow-200';
+      case 'confirmed': return 'bg-blue-100 text-blue-800 border-blue-200';
+      case 'arrived': return 'bg-green-100 text-green-800 border-green-200';
+      case 'completed': return 'bg-purple-100 text-purple-800 border-purple-200';
+      case 'cancelled': return 'bg-red-100 text-red-800 border-red-200';
+      case 'no_show': return 'bg-gray-100 text-gray-800 border-gray-200';
+      default: return 'bg-gray-100 text-gray-800 border-gray-200';
+    }
+  };
+
+  const getStatusLabel = (status: AppointmentStatus) => {
+    switch (status) {
+      case 'pending': return 'En attente';
+      case 'confirmed': return 'Confirmé';
+      case 'arrived': return 'Arrivé';
+      case 'completed': return 'Terminé';
+      case 'cancelled': return 'Annulé';
+      case 'no_show': return 'Absent';
+      default: return status;
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'urgent': return 'text-red-600';
+      case 'high': return 'text-orange-600';
+      default: return 'text-gray-600';
+    }
+  };
+
+  return (
+    <div className="p-6 hover:bg-gray-50 transition-colors">
+      <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between gap-4">
+        <div className="flex-1 space-y-3">
+          <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-gray-900">Rendez-vous à enregistrer</h2>
-                <p className="text-sm text-gray-600">Planification des futurs rendez-vous</p>
+              <h3 className="font-semibold text-gray-900 flex items-center gap-2">
+                <User className="w-4 h-4 text-blue-600" />
+                {appointment.citizenName}
+                {appointment.priority !== 'normal' && (
+                  <span className={`text-xs font-bold ${getPriorityColor(appointment.priority)}`}>
+                    {appointment.priority === 'urgent' ? '🚨 URGENT' : '⚡ PRIORITÉ'}
+                  </span>
+                )}
+              </h3>
+              <p className="text-sm text-gray-600 mt-1">{appointment.purpose}</p>
               </div>
+            <div className={`px-3 py-1 rounded-full text-xs font-medium border ${getStatusColor(appointment.status)}`}>
+              {getStatusLabel(appointment.status)}
             </div>
-            <button
-              onClick={() => setShowAddModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2"
-            >
-              <Plus className="h-4 w-4" />
-              Ajouter
-            </button>
           </div>
 
-          {filteredFutureAppointments.length > 0 ? (
-            <div className="space-y-4">
-              {/* Grouper par date */}
-              {[...new Set(filteredFutureAppointments.map(a => a.date))].map(date => (
-                <div key={date} className="bg-white border rounded-lg overflow-hidden hover:shadow-md transition-all">
-                  <div 
-                    className="flex items-center justify-between p-4 bg-gray-50 cursor-pointer"
-                    onClick={() => setExpandedAppointment(expandedAppointment === date ? null : date)}
-                  >
-                    <div className="flex items-center gap-2">
-                      <CalendarIcon className="h-5 w-5 text-blue-600" />
-                      <h3 className="font-medium text-gray-800">{formatDate(date)}</h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 text-sm text-gray-600">
+            <div className="flex items-center gap-1">
+              <Calendar className="w-4 h-4" />
+              {new Date(appointment.date).toLocaleDateString('fr-FR')}
+            </div>
+            <div className="flex items-center gap-1">
+              <Clock className="w-4 h-4" />
+              {appointment.time} ({appointment.duration}min)
+            </div>
+            <div className="flex items-center gap-1">
+              <User className="w-4 h-4" />
+              {appointment.agent}
                     </div>
-                    <div className="flex items-center gap-3">
-                      <span className="text-sm text-gray-500">
-                        {filteredFutureAppointments.filter(a => a.date === date).length} rendez-vous
-                      </span>
-                      <ChevronDown className={`h-5 w-5 text-gray-400 transition-transform ${
-                        expandedAppointment === date ? 'rotate-180' : ''
-                      }`} />
+            <div className="flex items-center gap-1">
+              <Phone className="w-4 h-4" />
+              {appointment.citizenPhone}
                     </div>
                   </div>
                   
-                  {expandedAppointment === date && (
-                    <div className="p-4 divide-y divide-gray-100">
-                      {filteredFutureAppointments
-                        .filter(a => a.date === date)
-                        .sort((a, b) => a.time.localeCompare(b.time))
-                        .map(appointment => (
-                          <div key={appointment.id} className="py-3 first:pt-0 last:pb-0">
-                            <div className="flex items-center justify-between">
-                              <div className="flex items-center gap-3">
-                                <div className="w-16 flex-shrink-0">
-                                  <p className="text-base font-semibold text-gray-900">{appointment.time}</p>
-                                  <p className="text-xs text-gray-500">{appointment.duration} min</p>
-                                </div>
-                                <div>
-                                  <p className="font-medium text-gray-900">{appointment.citizenName}</p>
-                                  <p className="text-sm text-gray-600">{appointment.purpose}</p>
-                                  <p className="text-xs text-gray-500">Service: {appointment.service}</p>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2">
-                                <span className={`text-xs px-2 py-0.5 rounded-full ${getStatusColor(appointment.status)}`}>
-                                  {getStatusLabel(appointment.status)}
-                                </span>
-                                <button className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded">
-                                  <Eye className="h-4 w-4" />
-                                </button>
-                              </div>
-                            </div>
-                          </div>
-                        ))}
+          {appointment.notes && (
+            <div className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+              <strong>Notes:</strong> {appointment.notes}
                     </div>
                   )}
                 </div>
-              ))}
-            </div>
-          ) : (
-            <div className="text-center py-10 border border-dashed border-gray-300 rounded-lg">
-              <CalendarPlus className="h-12 w-12 text-gray-300 mx-auto mb-2" />
-              <p className="text-gray-500 font-medium">Aucun rendez-vous futur enregistré</p>
-              <button 
-                className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 mx-auto"
-                onClick={() => setShowAddModal(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Enregistrer un nouveau rendez-vous
-              </button>
-            </div>
+
+        <div className="flex flex-wrap gap-2">
+          {appointment.status === 'pending' && (
+            <button
+              onClick={() => onStatusChange(appointment.id, 'confirmed')}
+              className="px-3 py-1 bg-blue-600 text-white rounded text-xs font-medium hover:bg-blue-700 transition-colors flex items-center gap-1"
+            >
+              <Check className="w-3 h-3" />
+              Confirmer
+            </button>
           )}
-        </div>
+
+          {appointment.status === 'confirmed' && (
+            <>
+              <button
+                onClick={() => onStatusChange(appointment.id, 'arrived')}
+                className="px-3 py-1 bg-green-600 text-white rounded text-xs font-medium hover:bg-green-700 transition-colors flex items-center gap-1"
+              >
+                <UserCheck className="w-3 h-3" />
+                Arrivé
+              </button>
+              <button 
+                onClick={() => onStatusChange(appointment.id, 'no_show')}
+                className="px-3 py-1 bg-gray-600 text-white rounded text-xs font-medium hover:bg-gray-700 transition-colors flex items-center gap-1"
+              >
+                <X className="w-3 h-3" />
+                Absent
+              </button>
+            </>
       )}
       
-      {/* Navigation de pagination pour mobile */}
-      <div className="flex justify-between md:hidden mt-4">
+          {appointment.status === 'arrived' && (
         <button 
-          onClick={() => setActiveCategory(activeCategory === 'past' ? 'current' : activeCategory === 'current' ? 'past' : 'current')}
-          className="flex items-center gap-2 text-blue-600 px-4 py-2 rounded-lg border border-blue-200"
+              onClick={() => onStatusChange(appointment.id, 'completed')}
+              className="px-3 py-1 bg-purple-600 text-white rounded text-xs font-medium hover:bg-purple-700 transition-colors flex items-center gap-1"
         >
-          <ArrowLeft className="h-4 w-4" />
-          {activeCategory === 'future' ? 'Actualité' : activeCategory === 'current' ? 'Historique' : 'Actualité'}
+              <Check className="w-3 h-3" />
+              Terminer
         </button>
+          )}
         
+          {(appointment.status === 'pending' || appointment.status === 'confirmed') && (
         <button 
-          onClick={() => setActiveCategory(activeCategory === 'future' ? 'current' : activeCategory === 'current' ? 'future' : 'current')}
-          className="flex items-center gap-2 text-blue-600 px-4 py-2 rounded-lg border border-blue-200"
+              onClick={() => onStatusChange(appointment.id, 'cancelled')}
+              className="px-3 py-1 bg-red-600 text-white rounded text-xs font-medium hover:bg-red-700 transition-colors flex items-center gap-1"
         >
-          {activeCategory === 'past' ? 'Actualité' : activeCategory === 'current' ? 'Avenir' : 'Actualité'}
-          <ArrowRight className="h-4 w-4" />
+              <X className="w-3 h-3" />
+              Annuler
         </button>
+          )}
+        </div>
       </div>
     </div>
   );

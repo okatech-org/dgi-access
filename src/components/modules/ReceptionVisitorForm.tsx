@@ -3,7 +3,7 @@ import { Search, User, Building, MapPin, Clock, UserPlus, CheckCircle } from 'lu
 import { Employee, Service } from '../../types/personnel';
 import { Visitor } from '../../types/visitor';
 import { db } from '../../services/database';
-import { TYPICAL_COMPANIES, TYPICAL_VISIT_PURPOSES } from '../../data/dgi-sample-visitors';
+import { TYPICAL_VISIT_PURPOSES, FAMILY_RELATIONSHIP_TYPES, TYPICAL_COMPANIES } from '../../data/dgi-sample-visitors';
 
 interface ReceptionVisitorFormProps {
   onSubmit: (visitor: Omit<Visitor, 'id' | 'checkInTime' | 'badgeNumber'>) => void;
@@ -20,6 +20,8 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
   
   // État de recherche pour entreprise
   const [companySuggestions, setCompanySuggestions] = useState<string[]>([]);
+  const [showOtherCompany, setShowOtherCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
   
   // État du formulaire
   const [formData, setFormData] = useState({
@@ -31,6 +33,7 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
     idType: 'CNI' as const,
     idNumber: '',
     purpose: '',
+    relationshipType: '',
     expectedDuration: '30 minutes'
   });
 
@@ -63,10 +66,8 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
   // Auto-complétion pour entreprises gabonaises
   useEffect(() => {
     if (formData.company.length > 2) {
-      const companyResults = TYPICAL_COMPANIES.filter(company =>
-        company.toLowerCase().includes(formData.company.toLowerCase())
-      );
-      setCompanySuggestions(companyResults.slice(0, 5));
+      const companyResults = db.searchCompanies(formData.company);
+      setCompanySuggestions([...companyResults.slice(0, 5), 'Autre']);
     } else {
       setCompanySuggestions([]);
     }
@@ -74,7 +75,13 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    
+    // Si le motif change et ce n'est pas "Visite Parent", réinitialiser le type de parenté
+    if (name === 'purpose' && value !== 'Visite Parent') {
+      setFormData(prev => ({ ...prev, [name]: value, relationshipType: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, [name]: value }));
+    }
   };
 
   const handleEmployeeSelect = (employee: Employee) => {
@@ -84,8 +91,29 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
   };
 
   const handleCompanySelect = (company: string) => {
-    setFormData(prev => ({ ...prev, company }));
+    if (company === 'Autre') {
+      setShowOtherCompany(true);
+      setFormData(prev => ({ ...prev, company: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, company }));
+      setShowOtherCompany(false);
+    }
     setCompanySuggestions([]);
+  };
+
+  const handleSaveNewCompany = async () => {
+    if (newCompanyName.trim()) {
+      await db.saveCompany(newCompanyName.trim());
+      setFormData(prev => ({ ...prev, company: newCompanyName.trim() }));
+      setNewCompanyName('');
+      setShowOtherCompany(false);
+    }
+  };
+
+  const handleCancelNewCompany = () => {
+    setNewCompanyName('');
+    setShowOtherCompany(false);
+    setFormData(prev => ({ ...prev, company: '' }));
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -93,6 +121,11 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
     
     if (!selectedEmployee) {
       alert('Veuillez sélectionner un employé DGI à visiter');
+      return;
+    }
+
+    if (formData.purpose === 'Visite Parent' && !formData.relationshipType) {
+      alert('⚠️ Veuillez sélectionner le type de parenté pour la visite parent');
       return;
     }
 
@@ -104,12 +137,30 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
       email: formData.email || undefined,
       idType: formData.idType,
       idNumber: formData.idNumber,
-      purpose: formData.purpose,
+      purpose: formData.purpose === 'Visite Parent' && formData.relationshipType 
+        ? `${formData.purpose} (${formData.relationshipType})` 
+        : formData.purpose,
       employeeToVisit: selectedEmployee.id,
       serviceToVisit: selectedEmployee.service.id,
       status: 'checked-in',
       expectedDuration: formData.expectedDuration
     };
+
+    // 🎯 DÉTECTION AUTOMATIQUE DES RENDEZ-VOUS
+    const today = new Date().toISOString().split('T')[0];
+    const visitorName = `${formData.firstName} ${formData.lastName}`;
+    const employeeName = `${selectedEmployee.firstName} ${selectedEmployee.lastName}`;
+    
+    // Chercher un rendez-vous en attente pour ce visiteur
+    const pendingAppointment = db.findPendingAppointmentForVisitor(visitorName, employeeName, today);
+    
+    if (pendingAppointment) {
+      // Marquer automatiquement le rendez-vous comme effectué
+      db.updateAppointmentStatus(pendingAppointment.id, 'completed');
+      
+      // Notifier l'utilisateur
+      alert(`✅ Rendez-vous détecté et marqué comme effectué automatiquement !\n\nRendez-vous: ${pendingAppointment.purpose}\nHeure prévue: ${pendingAppointment.time}\nAgent: ${pendingAppointment.agent}`);
+    }
 
     onSubmit(visitor);
     
@@ -123,6 +174,7 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
       idType: 'CNI',
       idNumber: '',
       purpose: '',
+      relationshipType: '',
       expectedDuration: '30 minutes'
     });
     setSelectedEmployee(null);
@@ -229,12 +281,48 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
                   key={index}
                   type="button"
                   onClick={() => handleCompanySelect(company)}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100"
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 ${
+                    company === 'Autre' ? 'bg-orange-50 text-orange-700 font-medium' : ''
+                  }`}
                 >
                   <Building className="w-4 h-4 inline mr-2 text-gray-400" />
                   {company}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Interface pour ajouter une nouvelle société */}
+          {showOtherCompany && (
+            <div className="mt-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h4 className="text-sm font-medium text-orange-800 mb-2">
+                Ajouter une nouvelle société
+              </h4>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  placeholder="Nom de la nouvelle société..."
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveNewCompany}
+                    className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                  >
+                    Sauvegarder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelNewCompany}
+                    className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -373,6 +461,45 @@ export const ReceptionVisitorForm: React.FC<ReceptionVisitorFormProps> = ({ onSu
             </select>
           </div>
         </div>
+
+        {/* Sélection du type de parenté pour visite parent */}
+        {formData.purpose === 'Visite Parent' && (
+          <div className="bg-pink-50 p-4 rounded-lg border border-pink-200">
+            <label className="block text-sm font-medium text-pink-800 mb-2">
+              <User className="w-4 h-4 inline mr-1" />
+              Type de Parenté * (requis pour visite parent)
+            </label>
+            <select
+              name="relationshipType"
+              value={formData.relationshipType}
+              onChange={handleInputChange}
+              className={`${inputClass} ${!formData.relationshipType ? 'border-red-300' : ''}`}
+              required
+            >
+              <option value="">Sélectionnez le type de parenté...</option>
+              {FAMILY_RELATIONSHIP_TYPES.map((relationshipType, index) => (
+                <option key={index} value={relationshipType}>
+                  {relationshipType}
+                </option>
+              ))}
+            </select>
+            
+            {formData.relationshipType && (
+              <div className="mt-2 p-2 bg-pink-100 border border-pink-300 rounded text-sm">
+                <div className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-pink-600" />
+                  <span className="font-medium text-pink-900">
+                    Parenté sélectionnée: {formData.relationshipType}
+                  </span>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-2 text-xs text-pink-700 bg-pink-100 p-2 rounded">
+              La visite parent nécessite la spécification du lien de parenté avec l'employé DGI visité pour des raisons de sécurité.
+            </div>
+          </div>
+        )}
 
         {/* Informations pièce d'identité */}
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">

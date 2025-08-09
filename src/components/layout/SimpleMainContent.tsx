@@ -5,10 +5,15 @@ import { PersonnelManagementModule } from '../modules/PersonnelManagementModule'
 import { VisitorModuleSimple } from '../modules/VisitorModuleSimple';
 import { ReportsModule } from '../modules/ReportsModule';
 import { BadgeManagementModule } from '../modules/BadgeManagementModule';
-import { ReceptionVisitorForm } from '../modules/ReceptionVisitorForm';
-import { AdminReceptionForm } from '../modules/AdminReceptionForm';
+import { ReceptionHome } from '../ReceptionHome';
+
 import { VisitorWorkflow } from '../workflow/VisitorWorkflow';
 import { PackageWorkflow } from '../workflow/PackageWorkflow';
+import { AppointmentsModule } from '../modules/AppointmentsModule';
+import { PackagesModule } from '../modules/PackagesModule';
+import { StatisticsModule } from '../modules/StatisticsModule';
+import { ProfileModule } from '../modules/ProfileModule';
+import { DashboardModule } from '../modules/DashboardModule';
 import { useAuth } from '../../contexts/AuthContext';
 
 interface SimpleMainContentProps {
@@ -20,127 +25,148 @@ const SimpleHome: React.FC = () => {
   const { user } = useAuth();
   
   return (
-    <div className="p-6">
-      <div className="max-w-4xl mx-auto">
-        <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">
+    <div className="p-4 sm:p-6 lg:p-8">
+      <div className="max-w-6xl mx-auto">
+        {/* Header responsive */}
+        <div className="text-center mb-6 sm:mb-8 lg:mb-10">
+          <div className="mb-4">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-lg mb-4">
+              <span className="text-white font-bold text-xl">DGI</span>
+            </div>
+          </div>
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-900 mb-2 sm:mb-3">
             Bienvenue dans DGI Access
           </h1>
-          <p className="text-gray-600">
-            Système simplifié de gestion des visiteurs et du personnel
+          <p className="text-gray-600 text-sm sm:text-base lg:text-lg max-w-2xl mx-auto">
+            Système simplifié de gestion des visiteurs et du personnel pour la Direction Générale des Impôts
           </p>
+          <div className="mt-4 inline-flex items-center px-3 py-1 bg-blue-50 text-blue-700 rounded-full text-xs font-medium">
+            <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mr-2 animate-pulse"></div>
+            Version Simplifiée v2.0
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        {/* Grille de modules responsive */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 sm:gap-6 mb-8">
           {user?.role === 'ADMIN' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-6">
-              <div className="flex items-center mb-4">
-                <div className="w-12 h-12 bg-blue-600 rounded-lg flex items-center justify-center">
-                  <span className="text-white font-bold">👥</span>
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-200 group">
+              <div className="flex items-center mb-3 sm:mb-4">
+                <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                  <span className="text-white font-bold text-lg sm:text-xl">👥</span>
                 </div>
-                <h3 className="text-lg font-bold text-blue-900 ml-4">Personnel</h3>
+                <h3 className="text-base sm:text-lg font-bold text-blue-900 ml-3 sm:ml-4">Personnel</h3>
               </div>
-              <p className="text-blue-700 text-sm mb-4">
+              <p className="text-blue-700 text-xs sm:text-sm mb-3 sm:mb-4">
                 Gérez les employés par service et suivez leur activité
               </p>
-              <div className="text-xs text-blue-600">
-                ✓ Ajout/modification d'employés<br/>
-                ✓ Organisation par service<br/>
-                ✓ Export des données
+              <div className="text-xs text-blue-600 space-y-1">
+                <div>✓ Ajout/modification d'employés</div>
+                <div>✓ Organisation par service</div>
+                <div>✓ Export des données</div>
               </div>
             </div>
           )}
 
-          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-green-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">🎫</span>
+          <div className="bg-gradient-to-br from-green-50 to-green-100 border border-green-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-200 group">
+            <div className="flex items-center mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-green-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span className="text-white font-bold text-lg sm:text-xl">🎫</span>
               </div>
-              <h3 className="text-lg font-bold text-green-900 ml-4">Visiteurs</h3>
+              <h3 className="text-base sm:text-lg font-bold text-green-900 ml-3 sm:ml-4">Visiteurs</h3>
             </div>
-            <p className="text-green-700 text-sm mb-4">
+            <p className="text-green-700 text-xs sm:text-sm mb-3 sm:mb-4">
               Enregistrement visiteurs avec workflow guidé
             </p>
-            <div className="text-xs text-green-600">
-              ✓ Processus en 5 étapes<br/>
-              ✓ Extraction IA documents<br/>
-              ✓ Attribution badges
+            <div className="text-xs text-green-600 space-y-1">
+              <div>✓ Processus en 5 étapes</div>
+              <div>✓ Extraction IA documents</div>
+              <div>✓ Attribution badges</div>
             </div>
           </div>
 
-          <div className="bg-orange-50 border border-orange-200 rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-orange-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">📦</span>
+          <div className="bg-gradient-to-br from-orange-50 to-orange-100 border border-orange-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-200 group">
+            <div className="flex items-center mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span className="text-white font-bold text-lg sm:text-xl">📦</span>
               </div>
-              <h3 className="text-lg font-bold text-orange-900 ml-4">Colis</h3>
+              <h3 className="text-base sm:text-lg font-bold text-orange-900 ml-3 sm:ml-4">Colis</h3>
             </div>
-            <p className="text-orange-700 text-sm mb-4">
+            <p className="text-orange-700 text-xs sm:text-sm mb-3 sm:mb-4">
               Gestion des colis et courriers entrants
             </p>
-            <div className="text-xs text-orange-600">
-              ✓ Documentation photo<br/>
-              ✓ Notifications automatiques<br/>
-              ✓ Traçabilité complète
+            <div className="text-xs text-orange-600 space-y-1">
+              <div>✓ Documentation photo</div>
+              <div>✓ Notifications automatiques</div>
+              <div>✓ Traçabilité complète</div>
             </div>
           </div>
 
-          <div className="bg-purple-50 border border-purple-200 rounded-lg p-6">
-            <div className="flex items-center mb-4">
-              <div className="w-12 h-12 bg-purple-600 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold">📊</span>
+          <div className="bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 rounded-xl p-4 sm:p-6 hover:shadow-lg transition-all duration-200 group">
+            <div className="flex items-center mb-3 sm:mb-4">
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform">
+                <span className="text-white font-bold text-lg sm:text-xl">📊</span>
               </div>
-              <h3 className="text-lg font-bold text-purple-900 ml-4">Rapports</h3>
+              <h3 className="text-base sm:text-lg font-bold text-purple-900 ml-3 sm:ml-4">Rapports</h3>
             </div>
-            <p className="text-purple-700 text-sm mb-4">
+            <p className="text-purple-700 text-xs sm:text-sm mb-3 sm:mb-4">
               Consultez les statistiques et exportez les données
             </p>
-            <div className="text-xs text-purple-600">
-              ✓ Rapports quotidiens<br/>
-              ✓ Statistiques par service<br/>
-              ✓ Export CSV
+            <div className="text-xs text-purple-600 space-y-1">
+              <div>✓ Rapports quotidiens</div>
+              <div>✓ Statistiques par service</div>
+              <div>✓ Export CSV</div>
             </div>
           </div>
         </div>
 
-        {/* Accès rapide aux nouveaux workflows */}
-        <div className="mt-8 bg-white rounded-lg border p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">🚀 Processus Guidés</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        {/* Actions rapides */}
+        <div className="bg-white rounded-xl border shadow-sm p-4 sm:p-6 mb-6 sm:mb-8">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+            <span className="text-2xl mr-2">🚀</span>
+            Actions Rapides
+          </h3>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
             <a 
               href="/visitor-workflow"
-              className="flex items-center p-4 border border-blue-200 rounded-lg hover:border-blue-400 hover:bg-blue-50 transition-all group"
+              className="flex items-center p-3 sm:p-4 border-2 border-blue-200 rounded-xl hover:border-blue-400 hover:bg-blue-50 transition-all group"
             >
-              <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-blue-200">
-                <span className="text-blue-600 text-xl">👤</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-lg flex items-center justify-center mr-3 sm:mr-4 group-hover:bg-blue-200 group-hover:scale-110 transition-all">
+                <span className="text-blue-600 text-lg sm:text-xl">👤</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Nouveau Visiteur</h4>
-                <p className="text-sm text-gray-600">Processus complet en 5 étapes avec IA</p>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Nouveau Visiteur</h4>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Processus complet en 5 étapes avec IA</p>
               </div>
             </a>
             
             <a 
               href="/package-workflow"
-              className="flex items-center p-4 border border-orange-200 rounded-lg hover:border-orange-400 hover:bg-orange-50 transition-all group"
+              className="flex items-center p-3 sm:p-4 border-2 border-orange-200 rounded-xl hover:border-orange-400 hover:bg-orange-50 transition-all group"
             >
-              <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center mr-4 group-hover:bg-orange-200">
-                <span className="text-orange-600 text-xl">📦</span>
+              <div className="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-lg flex items-center justify-center mr-3 sm:mr-4 group-hover:bg-orange-200 group-hover:scale-110 transition-all">
+                <span className="text-orange-600 text-lg sm:text-xl">📦</span>
               </div>
-              <div>
-                <h4 className="font-semibold text-gray-900">Nouveau Colis</h4>
-                <p className="text-sm text-gray-600">Enregistrement colis/courrier avec photo</p>
+              <div className="flex-1 min-w-0">
+                <h4 className="font-semibold text-gray-900 text-sm sm:text-base">Nouveau Colis</h4>
+                <p className="text-xs sm:text-sm text-gray-600 truncate">Enregistrement colis/courrier avec photo</p>
               </div>
             </a>
           </div>
         </div>
 
-        <div className="mt-8 bg-gray-50 rounded-lg p-6">
-          <h3 className="text-lg font-bold text-gray-900 mb-4">Guide d'utilisation rapide</h3>
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">Pour enregistrer un visiteur :</h4>
-              <ol className="list-decimal list-inside space-y-1 text-gray-600">
+        {/* Guide d'utilisation responsive */}
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-xl p-4 sm:p-6">
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 mb-4 sm:mb-6 flex items-center">
+            <span className="text-2xl mr-2">📚</span>
+            Guide d'utilisation rapide
+          </h3>
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+            <div className="bg-white rounded-lg p-4 sm:p-5">
+              <h4 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base flex items-center">
+                <span className="w-6 h-6 bg-blue-100 text-blue-600 rounded-full flex items-center justify-center text-xs font-bold mr-2">1</span>
+                Enregistrer un visiteur
+              </h4>
+              <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm text-gray-600">
                 <li>Allez dans la section "Visiteurs"</li>
                 <li>Remplissez les informations du visiteur</li>
                 <li>Recherchez l'employé à visiter</li>
@@ -148,9 +174,12 @@ const SimpleHome: React.FC = () => {
                 <li>Validez pour imprimer le badge</li>
               </ol>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-800 mb-2">Pour gérer le personnel :</h4>
-              <ol className="list-decimal list-inside space-y-1 text-gray-600">
+            <div className="bg-white rounded-lg p-4 sm:p-5">
+              <h4 className="font-semibold text-gray-800 mb-3 text-sm sm:text-base flex items-center">
+                <span className="w-6 h-6 bg-green-100 text-green-600 rounded-full flex items-center justify-center text-xs font-bold mr-2">2</span>
+                Gérer le personnel
+              </h4>
+              <ol className="list-decimal list-inside space-y-1.5 text-xs sm:text-sm text-gray-600">
                 <li>Accédez au module "Personnel"</li>
                 <li>Ajoutez ou modifiez les employés</li>
                 <li>Organisez par service</li>
@@ -171,86 +200,54 @@ export const SimpleMainContent: React.FC<SimpleMainContentProps> = ({
   const { user } = useAuth();
 
   return (
-    <main className={`
-      flex-1 bg-gray-50 min-h-screen overflow-auto transition-all duration-300
-      ${sidebarOpen ? 'lg:ml-0' : ''}
-    `}>
-      <Routes>
-        <Route path="/" element={<SimpleHome />} />
-        
-        {user?.role === 'ADMIN' && (
-          <Route path="/personnel" element={<PersonnelManagementModule />} />
-        )}
-        
-        <Route path="/visitors" element={<VisitorModuleSimple />} />
-        <Route path="/reception" element={
-          <div className="p-6">
-            <div className="max-w-7xl mx-auto">
-              {(() => {
-                console.log('🔍 Route /reception - Rôle utilisateur:', user?.role);
-                console.log('🔍 Condition ADMIN:', user?.role === 'ADMIN');
-                return user?.role === 'ADMIN' ? (
-                  <>
-                    <div className="mb-4 p-3 bg-green-100 border border-green-300 rounded-lg">
-                      <p className="text-green-800 text-sm">
-                        ✅ Mode ADMIN détecté - Formulaire administrateur avec grilles DGI
-                      </p>
-                    </div>
-                    <AdminReceptionForm onSubmit={(visitorData) => {
-                      console.log('Visiteur enregistré par admin:', visitorData);
-                      alert('✅ Visiteur enregistré avec succès ! Badge prêt pour impression.');
-                    }} />
-                  </>
-                ) : (
-                  <>
-                    <div className="mb-4 p-3 bg-blue-100 border border-blue-300 rounded-lg">
-                      <p className="text-blue-800 text-sm">
-                        ✅ Mode RÉCEPTION détecté - Formulaire réception standard
-                      </p>
-                    </div>
-                    <div className="bg-gradient-to-r from-blue-600 to-blue-800 text-white rounded-lg p-6 mb-6">
-                      <h1 className="text-2xl font-bold">Module Réception DGI</h1>
-                      <p className="text-blue-100 mt-1">
-                        Enregistrement visiteurs avec traçabilité personnel DGI
-                      </p>
-                    </div>
-                    <ReceptionVisitorForm onSubmit={(visitorData) => {
-                      console.log('Visiteur enregistré:', visitorData);
-                      alert('✅ Visiteur enregistré avec succès ! Badge prêt pour impression.');
-                    }} />
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-        } />
-        <Route path="/badges" element={<BadgeManagementModule />} />
-        
-        {/* Nouveaux workflows */}
-        <Route path="/visitor-workflow" element={
-          <VisitorWorkflow 
-            onComplete={(result) => {
-              console.log('Visiteur enregistré:', result);
-              alert(`✅ Visiteur enregistré avec succès !\nN° d'enregistrement: ${result.registrationNumber}`);
-            }}
-          />
-        } />
-        
-        <Route path="/package-workflow" element={
-          <PackageWorkflow 
-            onComplete={(result) => {
-              console.log('Colis enregistré:', result);
-              alert(`✅ Colis enregistré avec succès !\nN° d'enregistrement: ${result.registrationNumber}`);
-            }}
-          />
-        } />
-        
-        {user?.role === 'ADMIN' && (
-          <Route path="/reports" element={<ReportsModule />} />
-        )}
-        
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
+    <main className="flex-1 bg-gray-50 overflow-hidden flex flex-col">
+      {/* Container avec scroll pour le contenu */}
+      <div className="flex-1 overflow-y-auto">
+        <div className="min-h-full">
+          <Routes>
+            <Route path="/" element={<SimpleHome />} />
+            
+            {user?.role === 'ADMIN' && (
+              <Route path="/personnel" element={<PersonnelManagementModule />} />
+            )}
+            
+            <Route path="/visitors" element={<VisitorModuleSimple />} />
+            {/* Page d'accueil spécifique pour les réceptionnistes avec accès direct aux fonctions principales */}
+            <Route path="/reception" element={<ReceptionHome />} />
+            <Route path="/badges" element={<BadgeManagementModule />} />
+            <Route path="/appointments" element={<AppointmentsModule />} />
+            <Route path="/packages" element={<PackagesModule />} />
+            <Route path="/statistics" element={<StatisticsModule />} />
+            <Route path="/profile" element={<ProfileModule />} />
+            <Route path="/dashboard" element={<DashboardModule />} />
+            
+            {/* Nouveaux workflows */}
+            <Route path="/visitor-workflow" element={
+              <VisitorWorkflow 
+                onComplete={(result) => {
+                  console.log('Visiteur enregistré:', result);
+                  alert(`✅ Visiteur enregistré avec succès !\nN° d'enregistrement: ${result.registrationNumber}`);
+                }}
+              />
+            } />
+            
+            <Route path="/package-workflow" element={
+              <PackageWorkflow 
+                onComplete={(result) => {
+                  console.log('Colis enregistré:', result);
+                  alert(`✅ Colis enregistré avec succès !\nN° d'enregistrement: ${result.registrationNumber}`);
+                }}
+              />
+            } />
+            
+            {user?.role === 'ADMIN' && (
+              <Route path="/reports" element={<ReportsModule />} />
+            )}
+            
+            <Route path="*" element={<Navigate to={user?.role === 'ADMIN' ? '/admin/dashboard' : '/reception/dashboard'} replace />} />
+          </Routes>
+        </div>
+      </div>
     </main>
   );
 };

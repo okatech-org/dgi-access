@@ -3,8 +3,9 @@ import { Users, Clock, CheckCircle, XCircle, UserPlus, Search, Download, Eye } f
 import { Visitor } from '../../types/visitor';
 import { Employee, Service } from '../../types/personnel';
 import { db } from '../../services/database';
-import { TYPICAL_COMPANIES } from '../../data/dgi-sample-visitors';
+
 import { ReceptionVisitorForm } from './ReceptionVisitorForm';
+import { AdminReceptionForm } from './AdminReceptionForm';
 import { useAuth } from '../../contexts/AuthContext';
 import { useLocation } from 'react-router-dom';
 
@@ -44,6 +45,8 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
   const [companySuggestions, setCompanySuggestions] = useState<string[]>([]);
+  const [showOtherCompany, setShowOtherCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -68,10 +71,8 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
   // Auto-complétion pour les entreprises
   useEffect(() => {
     if (formData.company.length > 2) {
-      const companyResults = TYPICAL_COMPANIES.filter(company =>
-        company.toLowerCase().includes(formData.company.toLowerCase())
-      );
-      setCompanySuggestions(companyResults.slice(0, 5));
+      const companyResults = db.searchCompanies(formData.company);
+      setCompanySuggestions([...companyResults.slice(0, 5), 'Autre']);
     } else {
       setCompanySuggestions([]);
     }
@@ -116,6 +117,34 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
     });
     setSelectedEmployee(null);
     setSearchQuery('');
+    setShowOtherCompany(false);
+    setNewCompanyName('');
+  };
+
+  const handleCompanySelect = (company: string) => {
+    if (company === 'Autre') {
+      setShowOtherCompany(true);
+      setFormData(prev => ({ ...prev, company: '' }));
+    } else {
+      setFormData(prev => ({ ...prev, company }));
+      setShowOtherCompany(false);
+    }
+    setCompanySuggestions([]);
+  };
+
+  const handleSaveNewCompany = async () => {
+    if (newCompanyName.trim()) {
+      await db.saveCompany(newCompanyName.trim());
+      setFormData(prev => ({ ...prev, company: newCompanyName.trim() }));
+      setNewCompanyName('');
+      setShowOtherCompany(false);
+    }
+  };
+
+  const handleCancelNewCompany = () => {
+    setNewCompanyName('');
+    setShowOtherCompany(false);
+    setFormData(prev => ({ ...prev, company: '' }));
   };
 
   const inputClass = "w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500";
@@ -183,15 +212,48 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
                 <button
                   key={index}
                   type="button"
-                  onClick={() => {
-                    setFormData(prev => ({ ...prev, company }));
-                    setCompanySuggestions([]);
-                  }}
-                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm"
+                  onClick={() => handleCompanySelect(company)}
+                  className={`w-full px-4 py-2 text-left hover:bg-gray-50 text-sm ${
+                    company === 'Autre' ? 'bg-orange-50 text-orange-700 font-medium hover:bg-orange-100' : ''
+                  }`}
                 >
                   {company}
                 </button>
               ))}
+            </div>
+          )}
+
+          {/* Interface pour ajouter une nouvelle société */}
+          {showOtherCompany && (
+            <div className="mt-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+              <h4 className="text-sm font-medium text-orange-800 mb-2">
+                Ajouter une nouvelle société
+              </h4>
+              <div className="space-y-3">
+                <input
+                  type="text"
+                  value={newCompanyName}
+                  onChange={(e) => setNewCompanyName(e.target.value)}
+                  placeholder="Nom de la nouvelle société..."
+                  className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                />
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={handleSaveNewCompany}
+                    className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                  >
+                    Sauvegarder
+                  </button>
+                  <button
+                    type="button"
+                    onClick={handleCancelNewCompany}
+                    className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                  >
+                    Annuler
+                  </button>
+                </div>
+              </div>
             </div>
           )}
         </div>
@@ -676,7 +738,9 @@ Bureau: ${employee ? `Bureau ${employee.office}, ${employee.floor}` : 'N/A'}
         />
       </div>
 
-      {isReception ? (
+      {user?.role === 'ADMIN' ? (
+        <AdminReceptionForm onSubmit={handleRegisterVisitor} />
+      ) : isReception ? (
         <ReceptionVisitorForm onSubmit={handleRegisterVisitor} />
       ) : (
         <VisitorRegistrationForm

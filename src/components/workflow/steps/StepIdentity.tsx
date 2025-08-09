@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
-import { Camera, User, Upload, Check, AlertCircle, Scan, RefreshCw } from 'lucide-react';
+import React, { useState, useRef, useEffect } from 'react';
+import { Camera, User, Upload, Check, AlertCircle, Scan, RefreshCw, Building } from 'lucide-react';
 import { VisitorRegistrationData, RegistrationMethod, IdType } from '../../../types/visitor-process';
+import { db } from '../../../services/database';
 
 interface StepIdentityProps {
   data: VisitorRegistrationData;
@@ -24,6 +25,11 @@ export const StepIdentity: React.FC<StepIdentityProps> = ({ data, onUpdate }) =>
   const fileInputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const [cameraStream, setCameraStream] = useState<MediaStream | null>(null);
+  
+  // États pour l'auto-complétion des sociétés
+  const [companySuggestions, setCompanySuggestions] = useState<string[]>([]);
+  const [showOtherCompany, setShowOtherCompany] = useState(false);
+  const [newCompanyName, setNewCompanyName] = useState('');
 
   // Simulation de l'extraction IA
   const handleAIScan = async (file: File) => {
@@ -132,6 +138,43 @@ export const StepIdentity: React.FC<StepIdentityProps> = ({ data, onUpdate }) =>
         [field]: value
       }
     });
+  };
+
+  // Auto-complétion pour les sociétés
+  useEffect(() => {
+    const companyValue = data.identity.company || '';
+    if (companyValue.length > 2) {
+      const companyResults = db.searchCompanies(companyValue);
+      setCompanySuggestions([...companyResults.slice(0, 5), 'Autre']);
+    } else {
+      setCompanySuggestions([]);
+    }
+  }, [data.identity.company]);
+
+  const handleCompanySelect = (company: string) => {
+    if (company === 'Autre') {
+      setShowOtherCompany(true);
+      updateIdentity('company', '');
+    } else {
+      updateIdentity('company', company);
+      setShowOtherCompany(false);
+    }
+    setCompanySuggestions([]);
+  };
+
+  const handleSaveNewCompany = async () => {
+    if (newCompanyName.trim()) {
+      await db.saveCompany(newCompanyName.trim());
+      updateIdentity('company', newCompanyName.trim());
+      setNewCompanyName('');
+      setShowOtherCompany(false);
+    }
+  };
+
+  const handleCancelNewCompany = () => {
+    setNewCompanyName('');
+    setShowOtherCompany(false);
+    updateIdentity('company', '');
   };
 
   // Recommencer le scan
@@ -426,7 +469,7 @@ export const StepIdentity: React.FC<StepIdentityProps> = ({ data, onUpdate }) =>
               />
             </div>
             
-            <div>
+            <div className="relative">
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Société/Organisation
               </label>
@@ -435,8 +478,64 @@ export const StepIdentity: React.FC<StepIdentityProps> = ({ data, onUpdate }) =>
                 value={data.identity.company || ''}
                 onChange={(e) => updateIdentity('company', e.target.value)}
                 className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Nom de l'entreprise"
+                placeholder="ex: SOGARA, BGFI Bank, Total Gabon..."
               />
+              
+              {/* Suggestions entreprises */}
+              {companySuggestions.length > 0 && (
+                <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+                  <div className="p-2 border-b bg-blue-50">
+                    <p className="text-xs text-blue-700 font-medium">Entreprises gabonaises</p>
+                  </div>
+                  {companySuggestions.map((company, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      onClick={() => handleCompanySelect(company)}
+                      className={`w-full px-4 py-2 text-left hover:bg-gray-50 text-sm border-b border-gray-100 ${
+                        company === 'Autre' ? 'bg-orange-50 text-orange-700 font-medium' : ''
+                      }`}
+                    >
+                      <Building className="w-4 h-4 inline mr-2 text-gray-400" />
+                      {company}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              {/* Interface pour ajouter une nouvelle société */}
+              {showOtherCompany && (
+                <div className="mt-3 p-4 bg-orange-50 border border-orange-200 rounded-lg">
+                  <h4 className="text-sm font-medium text-orange-800 mb-2">
+                    Ajouter une nouvelle société
+                  </h4>
+                  <div className="space-y-3">
+                    <input
+                      type="text"
+                      value={newCompanyName}
+                      onChange={(e) => setNewCompanyName(e.target.value)}
+                      placeholder="Nom de la nouvelle société..."
+                      className="w-full px-3 py-2 border border-orange-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500"
+                    />
+                    <div className="flex gap-2">
+                      <button
+                        type="button"
+                        onClick={handleSaveNewCompany}
+                        className="flex-1 px-3 py-2 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors text-sm font-medium"
+                      >
+                        Sauvegarder
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleCancelNewCompany}
+                        className="flex-1 px-3 py-2 bg-gray-300 text-gray-700 rounded-lg hover:bg-gray-400 transition-colors text-sm font-medium"
+                      >
+                        Annuler
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             <div>

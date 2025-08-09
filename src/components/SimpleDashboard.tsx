@@ -47,18 +47,21 @@ export const SimpleDashboard: React.FC = () => {
         onNavigateToProfile={handleNavigateToProfile}
       />
       
-      <div className="flex flex-1 relative">
+      <div className="flex flex-1 relative overflow-hidden">
+        {/* Overlay pour mobile quand sidebar est ouverte */}
         {sidebarOpen && (
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+            className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden transition-opacity duration-300"
             onClick={() => setSidebarOpen(false)}
           />
         )}
         
+        {/* Sidebar avec animation responsive */}
         <div className={`
           fixed lg:relative top-0 left-0 h-full z-50 lg:z-auto
           transform transition-transform duration-300 ease-in-out lg:transform-none
           ${sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          w-64 flex-shrink-0
         `}>
           <SimpleSidebar 
             isOpen={sidebarOpen || window.innerWidth >= 1024} 
@@ -67,14 +70,30 @@ export const SimpleDashboard: React.FC = () => {
           />
         </div>
         
-        <SimpleMainContent 
-          activeModule={activeModule}
-          sidebarOpen={sidebarOpen && window.innerWidth >= 1024}
-        />
-      </div>
-      
-      <div className="mt-auto text-center text-xs text-gray-500 py-3 border-t border-gray-200">
-        <p>DGI Access - Version Simplifiée | © {new Date().getFullYear()} ORGANEUS Gabon</p>
+        {/* Contenu principal responsive */}
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+          <SimpleMainContent 
+            activeModule={activeModule}
+            sidebarOpen={sidebarOpen && window.innerWidth >= 1024}
+          />
+          
+          {/* Footer optionnel seulement sur desktop et en bas du contenu */}
+          <div className="hidden lg:block mt-auto border-t border-gray-100 bg-white">
+            <div className="px-4 py-2">
+              <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex items-center space-x-4">
+                  <span>DGI Access v2.0</span>
+                  <span className="text-gray-300">|</span>
+                  <span>Version Simplifiée</span>
+                </div>
+                <div className="flex items-center space-x-2">
+                  <div className="w-1.5 h-1.5 bg-green-500 rounded-full"></div>
+                  <span>© {new Date().getFullYear()} ORGANEUS Gabon</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   );

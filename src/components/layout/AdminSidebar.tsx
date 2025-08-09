@@ -51,8 +51,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, activeModule
   const adminModules = [
     { id: 'dashboard', label: 'Tableau de bord', icon: Home, color: 'text-blue-600', description: "Vue d'ensemble du système" },
     { id: 'users', label: 'Utilisateurs', icon: Users, color: 'text-purple-600', description: 'Gestion des comptes utilisateurs' },
-    { id: 'reception', label: 'Enregistrements', icon: UserCheck, color: 'text-green-600', description: 'Entrées/Sorties & badges' },
-    { id: 'visitors', label: 'Visites', icon: Users, color: 'text-blue-600', description: 'Visiteurs & historiques' },
+    { id: 'visitors', label: 'Gestion des Visiteurs', icon: UserPlus, color: 'text-blue-600', description: 'Enregistrement, historique & badges' },
     { id: 'appointments', label: 'Rendez-vous', icon: Calendar, color: 'text-indigo-600', description: 'Planification des visites' },
     { id: 'packages', label: 'Courrier & Colis', icon: Package, color: 'text-orange-600', description: 'Réception et suivi' },
     { id: 'badges', label: 'Badges', icon: Tag, color: 'text-teal-600', description: 'Création & révocation' },
@@ -92,7 +91,7 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({ isOpen, activeModule
   // Sections groupées
   const sidebarSections = [
     { title: 'Général', modules: ['dashboard', 'users'] },
-    { title: 'Entrées/Sorties', modules: ['reception', 'visitors', 'appointments', 'packages', 'badges'] },
+    { title: 'Gestion des Accès', modules: ['visitors', 'appointments', 'packages', 'badges'] },
     { title: 'Analyse & Rapports', modules: ['visitor-stats', 'audit'] },
     { title: 'Configuration', modules: ['system-settings', 'notifications'] },
   ];
