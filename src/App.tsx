@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { HomePage } from './components/HomePage';
 import { LoginScreen } from './components/LoginScreen';
-import { Dashboard } from './components/Dashboard';
+import { SimpleDashboard } from './components/SimpleDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/Toaster';
 
@@ -114,7 +114,7 @@ function AppContent() {
           path="/admin/*" 
           element={
             <ProtectedRoute allowedRoles={['ADMIN']}>
-              <Dashboard />
+              <SimpleDashboard />
             </ProtectedRoute>
           } 
         />
@@ -124,7 +124,7 @@ function AppContent() {
           path="/reception/*" 
           element={
             <ProtectedRoute allowedRoles={['RECEPTION']}>
-              <Dashboard />
+              <SimpleDashboard />
             </ProtectedRoute>
           } 
         />
