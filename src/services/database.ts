@@ -284,49 +284,27 @@ class DatabaseService {
   // ===== INITIALIZATION =====
   
   async initializeDefaultData(): Promise<void> {
+    // Importer les données réelles DGI
+    const { DGI_SERVICES } = await import('../data/dgi-services');
+    
     if (this.getServices().length === 0) {
-      const defaultServices: Service[] = [
-        {
-          id: 'service-001',
-          code: 'FISCALITE',
-          name: 'Fiscalité',
-          description: 'Service de gestion fiscale et des impôts',
-          responsable: '',
-          location: 'Bâtiment A - Étage 2',
-          employees: []
-        },
-        {
-          id: 'service-002',
-          code: 'RH',
-          name: 'Ressources Humaines',
-          description: 'Gestion du personnel et administration RH',
-          responsable: '',
-          location: 'Bâtiment A - Étage 1',
-          employees: []
-        },
-        {
-          id: 'service-003',
-          code: 'COMPTA',
-          name: 'Comptabilité',
-          description: 'Service comptable et financier',
-          responsable: '',
-          location: 'Bâtiment B - Étage 1',
-          employees: []
-        },
-        {
-          id: 'service-004',
-          code: 'ACCUEIL',
-          name: 'Accueil et Réception',
-          description: 'Service d\'accueil des visiteurs',
-          responsable: '',
-          location: 'Hall Principal',
-          employees: []
-        }
-      ];
-
-      for (const service of defaultServices) {
+      for (const service of DGI_SERVICES) {
         await this.saveService(service);
       }
+      console.log('✅ Services DGI initialisés:', DGI_SERVICES.length);
+    }
+  }
+
+  async initializeDGIEmployees(): Promise<void> {
+    // Importer les employés réels DGI
+    const { createDGIEmployees } = await import('../data/dgi-employees');
+    
+    if (this.getEmployees().length === 0) {
+      const dgiEmployees = createDGIEmployees();
+      for (const employee of dgiEmployees) {
+        await this.saveEmployee(employee);
+      }
+      console.log('✅ Personnel DGI initialisé:', dgiEmployees.length, 'employés');
     }
   }
 }

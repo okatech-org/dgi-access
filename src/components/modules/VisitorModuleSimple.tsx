@@ -3,6 +3,7 @@ import { Users, Clock, CheckCircle, XCircle, UserPlus, Search, Download, Eye } f
 import { Visitor } from '../../types/visitor';
 import { Employee, Service } from '../../types/personnel';
 import { db } from '../../services/database';
+import { TYPICAL_COMPANIES } from '../../data/dgi-sample-visitors';
 
 interface StatCardProps {
   title: string;
@@ -39,6 +40,7 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
   const [suggestions, setSuggestions] = useState<Employee[]>([]);
+  const [companySuggestions, setCompanySuggestions] = useState<string[]>([]);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -59,6 +61,18 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
       setSuggestions([]);
     }
   }, [searchQuery]);
+
+  // Auto-complétion pour les entreprises
+  useEffect(() => {
+    if (formData.company.length > 2) {
+      const companyResults = TYPICAL_COMPANIES.filter(company =>
+        company.toLowerCase().includes(formData.company.toLowerCase())
+      );
+      setCompanySuggestions(companyResults.slice(0, 5));
+    } else {
+      setCompanySuggestions([]);
+    }
+  }, [formData.company]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -147,7 +161,7 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
           />
         </div>
 
-        <div>
+        <div className="relative">
           <label className="block text-sm font-medium text-gray-700 mb-1">
             Société
           </label>
@@ -156,7 +170,27 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
             value={formData.company}
             onChange={(e) => setFormData(prev => ({ ...prev, company: e.target.value }))}
             className={inputClass}
+            placeholder="ex: SOGARA, BGFI Bank..."
           />
+          
+          {/* Suggestions entreprises */}
+          {companySuggestions.length > 0 && (
+            <div className="absolute z-20 w-full mt-1 bg-white border rounded-lg shadow-lg max-h-48 overflow-y-auto">
+              {companySuggestions.map((company, index) => (
+                <button
+                  key={index}
+                  type="button"
+                  onClick={() => {
+                    setFormData(prev => ({ ...prev, company }));
+                    setCompanySuggestions([]);
+                  }}
+                  className="w-full px-4 py-2 text-left hover:bg-gray-50 text-sm"
+                >
+                  {company}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         <div>
@@ -278,11 +312,18 @@ const VisitorRegistrationForm: React.FC<VisitorRegistrationFormProps> = ({
             required
           >
             <option value="">Sélectionner un motif</option>
-            <option value="Réunion professionnelle">Réunion professionnelle</option>
-            <option value="Livraison">Livraison</option>
-            <option value="Rendez-vous">Rendez-vous</option>
-            <option value="Prestation de service">Prestation de service</option>
-            <option value="Formation">Formation</option>
+            <option value="Déclaration fiscale annuelle">Déclaration fiscale annuelle</option>
+            <option value="Déclaration TVA trimestrielle">Déclaration TVA trimestrielle</option>
+            <option value="Contrôle fiscal - Vérification comptable">Contrôle fiscal - Vérification</option>
+            <option value="Recouvrement amiable">Recouvrement amiable</option>
+            <option value="Demande d'exonération fiscale">Demande d'exonération fiscale</option>
+            <option value="Formation SYDONIA">Formation SYDONIA</option>
+            <option value="Coordination politique fiscale">Coordination politique fiscale</option>
+            <option value="Réclamation impôt sur le revenu">Réclamation impôt sur le revenu</option>
+            <option value="Dépôt de dossier fiscal">Dépôt de dossier fiscal</option>
+            <option value="Consultation juridique fiscale">Consultation juridique fiscale</option>
+            <option value="Audit fiscal">Audit fiscal</option>
+            <option value="Mise en conformité fiscale">Mise en conformité fiscale</option>
             <option value="Autre">Autre</option>
           </select>
         </div>
