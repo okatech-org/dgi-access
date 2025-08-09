@@ -94,13 +94,14 @@ console.log('🔍 Condition ADMIN:', user?.role === 'ADMIN');
 ## 🧪 **Procédure de Test Obligatoire**
 
 ### **IMPORTANT : Mode Incognito Requis**
+
 > ⚠️ **Les tests doivent ABSOLUMENT être effectués en mode incognito pour éviter les problèmes de cache**
 
 ### **Test 1 : Compte ADMIN**
 
 ```text
 1. 🔥 Ouvrir navigateur INCOGNITO
-2. 🌐 Aller sur: http://localhost:5173
+2. 🌐 Aller sur: [http://localhost:5173](http://localhost:5173)
 3. 👤 Login: admin@dgi.ga / admin123
 4. 📱 Cliquer "Réception" dans sidebar
 5. 🔍 URL: /admin/reception
@@ -113,7 +114,7 @@ console.log('🔍 Condition ADMIN:', user?.role === 'ADMIN');
 
 ```text
 1. 🔥 Nouvel onglet INCOGNITO
-2. 🌐 Aller sur: http://localhost:5173
+2. 🌐 Aller sur: [http://localhost:5173](http://localhost:5173)
 3. 👤 Login: reception@dgi.ga / reception123
 4. 📱 Cliquer "Réception" dans sidebar
 5. 🔍 URL: /reception/reception
@@ -256,4 +257,4 @@ Pour valider le bon fonctionnement :
 
 **🏛️ Le système DGI Access avec grilles et données réelles est maintenant 100% fonctionnel !**
 
-**🚀 Testez immédiatement : http://localhost:5173 (mode incognito)**
+**🚀 Testez immédiatement : [http://localhost:5173](http://localhost:5173) (mode incognito)**

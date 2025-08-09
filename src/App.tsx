@@ -5,10 +5,7 @@ import { LoginScreen } from './components/LoginScreen';
 import { SimpleDashboard } from './components/SimpleDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/Toaster';
-import PWAInstallPrompt from './components/PWAInstallPrompt';
-import OfflineIndicator from './components/OfflineIndicator';
-import ServiceWorkerUpdatePrompt from './components/ServiceWorkerUpdatePrompt';
-import useServiceWorker from './hooks/useServiceWorker';
+import { PWAProvider, PWAStatus } from './components/pwa';
 
 /**
  * Route protégée qui nécessite une authentification
@@ -137,23 +134,20 @@ function AppContent() {
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
       <Toaster />
+      
+      {/* Composant de debug PWA en développement */}
+      {import.meta.env.DEV && <PWAStatus showDebug={true} />}
     </div>
   );
 }
 
 function App() {
-  const { showUpdatePrompt, setShowUpdatePrompt, updateServiceWorker } = useServiceWorker();
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppContent />
-        <OfflineIndicator />
-        <PWAInstallPrompt />
-        <ServiceWorkerUpdatePrompt 
-          show={showUpdatePrompt}
-          onUpdate={updateServiceWorker}
-          onDismiss={() => setShowUpdatePrompt(false)}
-        />
+        <PWAProvider>
+          <AppContent />
+        </PWAProvider>
       </AuthProvider>
     </BrowserRouter>
   );

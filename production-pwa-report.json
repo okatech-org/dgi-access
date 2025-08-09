@@ -1,0 +1,16 @@
+{
+  "timestamp": "2025-08-09T10:25:25.965Z",
+  "url": "https://impots-access.netlify.app",
+  "score": "7/7",
+  "percentage": 100,
+  "status": "EXCELLENT",
+  "tests": {
+    "accessibility": true,
+    "manifest": true,
+    "serviceWorker": true,
+    "security": true,
+    "icons": true,
+    "splashScreens": true,
+    "cleanupPage": true
+  }
+}

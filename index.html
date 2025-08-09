@@ -2,16 +2,175 @@
 <html lang="fr">
   <head>
     <meta charset="UTF-8" />
+    
+    <!-- Icônes et Favicon -->
     <link rel="icon" type="image/x-icon" href="/favicon.ico" />
-    <link rel="apple-touch-icon" href="/logo-dgi.png" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#1e40af" />
+    <link rel="shortcut icon" href="/favicon.ico" />
+    
+    <!-- Apple Touch Icons (iOS) -->
+    <link rel="apple-touch-icon" href="/icons/icon-180x180.png" />
+    <link rel="apple-touch-icon" sizes="152x152" href="/icons/icon-152x152.png" />
+    <link rel="apple-touch-icon" sizes="167x167" href="/icons/icon-167x167.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/icons/icon-180x180.png" />
+    
+    <!-- Viewport et comportement mobile -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes, viewport-fit=cover" />
+    
+    <!-- Theme Colors -->
+    <meta name="theme-color" content="#059669" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#047857" media="(prefers-color-scheme: dark)" />
+    
+    <!-- PWA Manifest -->
     <link rel="manifest" href="/manifest.json" />
-    <title>IMPOTS Access - Système de Gestion Intégré</title>
-    <meta name="description" content="Direction Générale des Impôts du Gabon - Système de gestion intégré pour les services fiscaux et d'imposition" />
+    
+    <!-- Titre et Description -->
+    <title>DGI Access - Système de Gestion des Visiteurs</title>
+    <meta name="description" content="Application officielle de gestion des visiteurs et du personnel de la Direction Générale des Impôts du Gabon" />
+    
+    <!-- Apple Mobile Web App -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="DGI Access" />
+    
+    <!-- Microsoft Tiles -->
+    <meta name="msapplication-TileColor" content="#059669" />
+    <meta name="msapplication-TileImage" content="/icons/icon-144x144.png" />
+    <meta name="msapplication-config" content="/browserconfig.xml" />
+    
+    <!-- Format Detection -->
+    <meta name="format-detection" content="telephone=no" />
+    <meta name="format-detection" content="date=no" />
+    <meta name="format-detection" content="address=no" />
+    <meta name="format-detection" content="email=no" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://dgi-access.ga/" />
+    <meta property="og:title" content="DGI Access - Système de Gestion des Visiteurs" />
+    <meta property="og:description" content="Application officielle de gestion des visiteurs et du personnel de la Direction Générale des Impôts du Gabon" />
+    <meta property="og:image" content="/icons/icon-512x512.png" />
+    <meta property="og:site_name" content="DGI Access" />
+    <meta property="og:locale" content="fr_GA" />
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="DGI Access" />
+    <meta name="twitter:description" content="Application de gestion des visiteurs - DGI Gabon" />
+    <meta name="twitter:image" content="/icons/icon-512x512.png" />
+    
+    <!-- Android -->
+    <meta name="mobile-web-app-capable" content="yes" />
+    <meta name="application-name" content="DGI Access" />
+    
+    <!-- iOS Splash Screens -->
+    <!-- iPhone -->
+    <link rel="apple-touch-startup-image" media="(device-width: 390px) and (device-height: 844px) and (-webkit-device-pixel-ratio: 3)" href="/splash/iphone12-splash.png" />
+    <link rel="apple-touch-startup-image" media="(device-width: 375px) and (device-height: 812px) and (-webkit-device-pixel-ratio: 3)" href="/splash/iphonex-splash.png" />
+    
+    <!-- iPad -->
+    <link rel="apple-touch-startup-image" media="(device-width: 834px) and (device-height: 1194px) and (-webkit-device-pixel-ratio: 2)" href="/splash/ipad-splash.png" />
+    
+    <!-- Preconnect for performance -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    
+    <!-- DNS Prefetch -->
+    <link rel="dns-prefetch" href="https://fonts.googleapis.com" />
+    
+    <!-- Styles pour le splash screen de chargement -->
+    <style>
+      #loading-screen {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #059669 0%, #047857 100%);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+      
+      #loading-content {
+        text-align: center;
+        color: white;
+      }
+      
+      #loading-logo {
+        width: 80px;
+        height: 80px;
+        margin: 0 auto 20px;
+        background: white;
+        border-radius: 16px;
+        padding: 16px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      }
+      
+      #loading-spinner {
+        width: 40px;
+        height: 40px;
+        margin: 20px auto;
+        border: 3px solid rgba(255,255,255,0.3);
+        border-top-color: white;
+        border-radius: 50%;
+        animation: spin 1s linear infinite;
+      }
+      
+      @keyframes spin {
+        to { transform: rotate(360deg); }
+      }
+      
+      .fade-out {
+        opacity: 0 !important;
+      }
+    </style>
+  <!-- BUILD_TIMESTAMP:1736859400000 CACHE_CLEARED -->
   </head>
   <body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+      <div id="loading-content">
+        <div id="loading-logo">
+          <img src="/logo-dgi.png" alt="DGI" style="width: 100%; height: 100%; object-fit: contain;" />
+        </div>
+        <h2 style="font-size: 24px; margin: 0;">DGI Access</h2>
+        <p style="font-size: 14px; opacity: 0.9; margin: 8px 0;">Chargement en cours...</p>
+        <div id="loading-spinner"></div>
+      </div>
+    </div>
+    
+    <!-- App Root -->
     <div id="root"></div>
+    
+    <!-- Main App Script -->
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- Loading Screen Removal -->
+    <script>
+      window.addEventListener('load', function() {
+        setTimeout(function() {
+          const loadingScreen = document.getElementById('loading-screen');
+          if (loadingScreen) {
+            loadingScreen.classList.add('fade-out');
+            setTimeout(function() {
+              loadingScreen.style.display = 'none';
+            }, 300);
+          }
+        }, 500);
+      });
+    </script>
+    
+    <!-- PWA Update Detection -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then(registration => console.log('SW registered'))
+            .catch(err => console.log('SW registration failed'));
+        });
+      }
+    </script>
   </body>
 </html>

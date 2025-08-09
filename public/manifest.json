@@ -1,47 +1,60 @@
 {
-  "name": "DGI Access - Système de Gestion des Visiteurs",
+  "name": "DGI Access - Application de Gestion des Visiteurs",
   "short_name": "DGI Access",
-  "description": "Application de gestion des visiteurs et du personnel de la Direction Générale des Impôts du Gabon",
-  "start_url": "/",
+  "description": "Application officielle de gestion des visiteurs et du personnel de la Direction Générale des Impôts du Gabon",
+  "theme_color": "#059669",
+  "background_color": "#ffffff",
   "display": "standalone",
   "orientation": "portrait",
-  "theme_color": "#1e40af",
-  "background_color": "#ffffff",
   "scope": "/",
+  "start_url": "/",
+  "id": "dgi-access-pwa",
+  "categories": ["business", "productivity", "government"],
   "lang": "fr-FR",
   "dir": "ltr",
-  "categories": ["business", "productivity", "government"],
   "prefer_related_applications": false,
   "icons": [
     {
       "src": "/icons/icon-72x72.png",
       "sizes": "72x72",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-96x96.png",
       "sizes": "96x96",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-128x128.png",
       "sizes": "128x128",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-144x144.png",
       "sizes": "144x144",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-152x152.png",
       "sizes": "152x152",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-167x167.png",
+      "sizes": "167x167",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icons/icon-180x180.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-192x192.png",
@@ -53,7 +66,7 @@
       "src": "/icons/icon-384x384.png",
       "sizes": "384x384",
       "type": "image/png",
-      "purpose": "any maskable"
+      "purpose": "any"
     },
     {
       "src": "/icons/icon-512x512.png",
@@ -65,15 +78,17 @@
   "screenshots": [
     {
       "src": "/screenshots/desktop-home.png",
-      "sizes": "1280x720",
+      "sizes": "1920x1080",
       "type": "image/png",
-      "label": "Page d'accueil"
+      "form_factor": "wide",
+      "label": "Page d'accueil - Desktop"
     },
     {
-      "src": "/screenshots/mobile-dashboard.png",
-      "sizes": "750x1334",
+      "src": "/screenshots/mobile-home.png",
+      "sizes": "390x844",
       "type": "image/png",
-      "label": "Tableau de bord mobile"
+      "form_factor": "narrow",
+      "label": "Page d'accueil - Mobile"
     }
   ],
   "shortcuts": [
@@ -82,26 +97,14 @@
       "short_name": "Visiteur",
       "description": "Enregistrer un nouveau visiteur",
       "url": "/admin/reception",
-      "icons": [
-        {
-          "src": "/icons/shortcut-visitor.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "icons": [{ "src": "/icons/shortcut-visitor.png", "sizes": "96x96" }]
     },
     {
       "name": "Personnel",
       "short_name": "Personnel",
       "description": "Gérer le personnel DGI",
       "url": "/admin/personnel",
-      "icons": [
-        {
-          "src": "/icons/shortcut-staff.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
+      "icons": [{ "src": "/icons/shortcut-staff.png", "sizes": "96x96" }]
     }
   ],
   "related_applications": [],

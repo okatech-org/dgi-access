@@ -89,13 +89,14 @@ Accès : Modules visiteurs et badges
 ## 🧪 **Tests de Production**
 
 ### **Test 1 : Accès Application**
+
 1. Ouvrir : <https://impots-access.netlify.app>
 2. Vérifier : Page d'accueil DGI
 3. Cliquer : "Accéder à l'application"
 
 ### **Test 2 : Connexion Admin**
 
-1. Login : admin@dgi.ga / admin123
+1. Login : `admin@dgi.ga` / `admin123`
 2. Vérifier : Accès à tous les modules
 3. Tester : Personnel, Réception, Visiteurs
 

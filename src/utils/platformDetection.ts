@@ -1,60 +1,61 @@
 /**
  * Utilitaire de détection de plateforme pour PWA
+ * Détecte iOS, Android et autres plateformes
  */
 
 export type Platform = 'ios' | 'android' | 'windows' | 'macos' | 'linux' | 'unknown';
 export type Browser = 'safari' | 'chrome' | 'firefox' | 'edge' | 'samsung' | 'opera' | 'unknown';
 
-interface DeviceInfo {
+interface PlatformInfo {
   platform: Platform;
   browser: Browser;
   isStandalone: boolean;
+  isPWA: boolean;
   isMobile: boolean;
   isTablet: boolean;
-  isPWA: boolean;
-  canInstall: boolean;
-  osVersion: string;
-  browserVersion: string;
+  isDesktop: boolean;
+  supportsPWA: boolean;
+  version: string;
 }
 
 class PlatformDetector {
   private userAgent: string;
-  private vendor: string;
-  private platform: string;
-  
+  private navigator: Navigator;
+
   constructor() {
-    this.userAgent = navigator.userAgent.toLowerCase();
-    this.vendor = navigator.vendor?.toLowerCase() || '';
-    this.platform = navigator.platform?.toLowerCase() || '';
+    this.userAgent = window.navigator.userAgent.toLowerCase();
+    this.navigator = window.navigator;
   }
 
   /**
    * Détecte le système d'exploitation
    */
-  detectOS(): Platform {
-    // iOS detection
-    if (/iphone|ipad|ipod/.test(this.userAgent) || 
-        (this.platform === 'macintel' && navigator.maxTouchPoints > 1)) {
+  detectPlatform(): Platform {
+    const ua = this.userAgent;
+    
+    // iOS detection (iPhone, iPad, iPod)
+    if (/iphone|ipad|ipod/.test(ua) || 
+        (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1)) {
       return 'ios';
     }
     
     // Android detection
-    if (/android/.test(this.userAgent)) {
+    if (/android/.test(ua)) {
       return 'android';
     }
     
     // Windows detection
-    if (/windows|win32|win64/.test(this.userAgent)) {
+    if (/windows|win32|win64/.test(ua)) {
       return 'windows';
     }
     
     // macOS detection
-    if (/macintosh|mac os x/.test(this.userAgent) && navigator.maxTouchPoints === 0) {
+    if (/macintosh|mac os x/.test(ua) && navigator.maxTouchPoints === 0) {
       return 'macos';
     }
     
     // Linux detection
-    if (/linux/.test(this.userAgent)) {
+    if (/linux/.test(ua)) {
       return 'linux';
     }
     
@@ -65,33 +66,35 @@ class PlatformDetector {
    * Détecte le navigateur
    */
   detectBrowser(): Browser {
+    const ua = this.userAgent;
+    
     // Samsung Browser
-    if (/samsungbrowser/.test(this.userAgent)) {
+    if (/samsungbrowser/.test(ua)) {
       return 'samsung';
     }
     
     // Opera
-    if (/opr\/|opera/.test(this.userAgent)) {
+    if (/opera|opr/.test(ua)) {
       return 'opera';
     }
     
     // Edge
-    if (/edg/.test(this.userAgent)) {
+    if (/edg/.test(ua)) {
       return 'edge';
     }
     
     // Chrome (doit être après Edge car Edge contient "chrome")
-    if (/chrome|chromium|crios/.test(this.userAgent) && this.vendor === 'google inc.') {
+    if (/chrome|chromium|crios/.test(ua)) {
       return 'chrome';
     }
     
     // Firefox
-    if (/firefox|fxios/.test(this.userAgent)) {
+    if (/firefox|fxios/.test(ua)) {
       return 'firefox';
     }
     
-    // Safari
-    if (/safari/.test(this.userAgent) && this.vendor.includes('apple')) {
+    // Safari (doit être dernier car d'autres navigateurs peuvent contenir "safari")
+    if (/safari/.test(ua) && !/chrome|chromium|crios/.test(ua)) {
       return 'safari';
     }
     
@@ -99,230 +102,210 @@ class PlatformDetector {
   }
 
   /**
-   * Vérifie si l'application est en mode standalone
+   * Détecte si l'app est en mode standalone (installée)
    */
   isStandalone(): boolean {
-    // iOS standalone
-    if ('standalone' in window.navigator && (window.navigator as any).standalone) {
-      return true;
+    // Pour iOS
+    if ('standalone' in this.navigator) {
+      return (this.navigator as any).standalone;
     }
     
-    // Android/Desktop PWA
+    // Pour Android et autres
     if (window.matchMedia('(display-mode: standalone)').matches) {
       return true;
     }
     
-    // Samsung Browser app mode
-    if (window.matchMedia('(display-mode: minimal-ui)').matches) {
-      return true;
-    }
-    
-    return false;
+    // Fallback pour les navigateurs qui ne supportent pas display-mode
+    return window.navigator.standalone || 
+           document.referrer.includes('android-app://');
   }
 
   /**
-   * Vérifie si c'est un appareil mobile
+   * Détecte si c'est un appareil mobile
    */
   isMobile(): boolean {
-    return /mobile|android|iphone|ipod/.test(this.userAgent);
+    return /mobile|android|iphone|ipod/.test(this.userAgent) ||
+           (navigator.maxTouchPoints > 0 && window.innerWidth <= 768);
   }
 
   /**
-   * Vérifie si c'est une tablette
+   * Détecte si c'est une tablette
    */
   isTablet(): boolean {
-    return /ipad|android.*tablet|tablet.*android/.test(this.userAgent) ||
-           (this.platform === 'macintel' && navigator.maxTouchPoints > 1);
+    return /ipad|tablet|playbook|silk/.test(this.userAgent) ||
+           (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1) ||
+           (/android/.test(this.userAgent) && !/mobile/.test(this.userAgent));
   }
 
   /**
-   * Vérifie si la PWA est déjà installée
+   * Vérifie si la plateforme supporte les PWA
    */
-  isPWAInstalled(): boolean {
-    return this.isStandalone() || window.matchMedia('(display-mode: standalone)').matches;
-  }
-
-  /**
-   * Vérifie si l'installation est possible
-   */
-  canInstallPWA(): boolean {
-    const os = this.detectOS();
+  supportsPWA(): boolean {
+    const platform = this.detectPlatform();
     const browser = this.detectBrowser();
     
-    // iOS: Safari uniquement, version 11.3+
-    if (os === 'ios') {
-      return browser === 'safari' && !this.isPWAInstalled();
+    // iOS: Safari 11.3+ supporte les PWA (iOS 11.3+)
+    if (platform === 'ios') {
+      if (browser === 'safari') {
+        const version = this.getIOSVersion();
+        return version >= 11.3;
+      }
+      return false; // Autres navigateurs sur iOS ne supportent pas vraiment les PWA
     }
     
-    // Android: Chrome, Edge, Samsung Browser, Opera
-    if (os === 'android') {
-      return ['chrome', 'edge', 'samsung', 'opera'].includes(browser) && !this.isPWAInstalled();
+    // Android: Chrome, Samsung Browser, Edge supportent les PWA
+    if (platform === 'android') {
+      return ['chrome', 'samsung', 'edge', 'opera'].includes(browser);
     }
     
-    // Desktop: Chrome, Edge
-    if (['windows', 'macos', 'linux'].includes(os)) {
-      return ['chrome', 'edge'].includes(browser) && !this.isPWAInstalled();
-    }
-    
-    return false;
+    // Desktop: Chrome, Edge, Firefox supportent les PWA
+    return ['chrome', 'edge', 'firefox', 'opera'].includes(browser);
   }
 
   /**
-   * Obtient la version de l'OS
+   * Obtient la version d'iOS
    */
-  getOSVersion(): string {
-    const os = this.detectOS();
-    
-    if (os === 'ios') {
-      const match = this.userAgent.match(/os (\d+)_(\d+)_?(\d+)?/);
-      if (match) {
-        return `${match[1]}.${match[2]}${match[3] ? `.${match[3]}` : ''}`;
-      }
+  private getIOSVersion(): number {
+    const match = this.userAgent.match(/os (\d+)_(\d+)/);
+    if (match) {
+      return parseFloat(`${match[1]}.${match[2]}`);
     }
-    
-    if (os === 'android') {
-      const match = this.userAgent.match(/android (\d+\.?\d*)/);
-      if (match) {
-        return match[1];
-      }
-    }
-    
-    if (os === 'windows') {
-      const match = this.userAgent.match(/windows nt (\d+\.\d+)/);
-      if (match) {
-        const versions: Record<string, string> = {
-          '10.0': '10/11',
-          '6.3': '8.1',
-          '6.2': '8',
-          '6.1': '7'
-        };
-        return versions[match[1]] || match[1];
-      }
-    }
-    
-    return 'unknown';
+    return 0;
   }
 
   /**
-   * Obtient la version du navigateur
+   * Obtient toutes les informations de la plateforme
    */
-  getBrowserVersion(): string {
+  getPlatformInfo(): PlatformInfo {
+    const platform = this.detectPlatform();
     const browser = this.detectBrowser();
-    let match;
+    const isMobile = this.isMobile();
+    const isTablet = this.isTablet();
     
-    switch (browser) {
-      case 'chrome':
-        match = this.userAgent.match(/chrome\/(\d+\.\d+)/);
-        break;
-      case 'firefox':
-        match = this.userAgent.match(/firefox\/(\d+\.\d+)/);
-        break;
-      case 'safari':
-        match = this.userAgent.match(/version\/(\d+\.\d+)/);
-        break;
-      case 'edge':
-        match = this.userAgent.match(/edg\/(\d+\.\d+)/);
-        break;
-      case 'samsung':
-        match = this.userAgent.match(/samsungbrowser\/(\d+\.\d+)/);
-        break;
-      case 'opera':
-        match = this.userAgent.match(/opr\/(\d+\.\d+)/);
-        break;
-    }
-    
-    return match ? match[1] : 'unknown';
-  }
-
-  /**
-   * Obtient toutes les informations du device
-   */
-  getDeviceInfo(): DeviceInfo {
     return {
-      platform: this.detectOS(),
-      browser: this.detectBrowser(),
+      platform,
+      browser,
       isStandalone: this.isStandalone(),
-      isMobile: this.isMobile(),
-      isTablet: this.isTablet(),
-      isPWA: this.isPWAInstalled(),
-      canInstall: this.canInstallPWA(),
-      osVersion: this.getOSVersion(),
-      browserVersion: this.getBrowserVersion()
+      isPWA: this.isStandalone() || window.matchMedia('(display-mode: standalone)').matches,
+      isMobile,
+      isTablet,
+      isDesktop: !isMobile && !isTablet,
+      supportsPWA: this.supportsPWA(),
+      version: this.userAgent
     };
+  }
+
+  /**
+   * Obtient les instructions d'installation spécifiques à la plateforme
+   */
+  getInstallInstructions(): {
+    title: string;
+    steps: string[];
+    icon: string;
+  } {
+    const platform = this.detectPlatform();
+    const browser = this.detectBrowser();
+    
+    if (platform === 'ios') {
+      return {
+        title: "Installer sur iPhone/iPad",
+        steps: [
+          "Appuyez sur le bouton de partage en bas de l'écran",
+          "Faites défiler et appuyez sur 'Sur l'écran d'accueil'",
+          "Appuyez sur 'Ajouter' en haut à droite",
+          "L'application sera ajoutée à votre écran d'accueil"
+        ],
+        icon: "share"
+      };
+    }
+    
+    if (platform === 'android') {
+      if (browser === 'chrome' || browser === 'edge') {
+        return {
+          title: "Installer sur Android",
+          steps: [
+            "Appuyez sur le menu (3 points) en haut à droite",
+            "Sélectionnez 'Installer l'application' ou 'Ajouter à l'écran d'accueil'",
+            "Confirmez l'installation",
+            "L'application sera ajoutée à votre écran d'accueil"
+          ],
+          icon: "more-vertical"
+        };
+      }
+      
+      if (browser === 'samsung') {
+        return {
+          title: "Installer sur Samsung",
+          steps: [
+            "Appuyez sur le menu en bas de l'écran",
+            "Sélectionnez 'Ajouter la page à'",
+            "Choisissez 'Écran d'accueil'",
+            "Confirmez l'ajout"
+          ],
+          icon: "menu"
+        };
+      }
+    }
+    
+    // Instructions pour desktop
+    return {
+      title: "Installer sur ordinateur",
+      steps: [
+        "Cliquez sur l'icône d'installation dans la barre d'adresse",
+        "Ou utilisez le menu du navigateur et sélectionnez 'Installer'",
+        "Confirmez l'installation",
+        "L'application sera disponible dans vos applications"
+      ],
+      icon: "download"
+    };
+  }
+
+  /**
+   * Vérifie si l'utilisateur utilise un navigateur recommandé
+   */
+  isRecommendedBrowser(): boolean {
+    const platform = this.detectPlatform();
+    const browser = this.detectBrowser();
+    
+    if (platform === 'ios') {
+      return browser === 'safari';
+    }
+    
+    if (platform === 'android') {
+      return ['chrome', 'samsung', 'edge'].includes(browser);
+    }
+    
+    return ['chrome', 'edge', 'firefox'].includes(browser);
+  }
+
+  /**
+   * Obtient une recommandation de navigateur si nécessaire
+   */
+  getBrowserRecommendation(): string | null {
+    if (this.isRecommendedBrowser()) {
+      return null;
+    }
+    
+    const platform = this.detectPlatform();
+    
+    if (platform === 'ios') {
+      return "Pour une meilleure expérience, utilisez Safari sur iOS";
+    }
+    
+    if (platform === 'android') {
+      return "Pour une meilleure expérience, utilisez Chrome ou Samsung Internet";
+    }
+    
+    return "Pour une meilleure expérience, utilisez Chrome, Edge ou Firefox";
   }
 }
 
-// Instance singleton
-const platformDetector = new PlatformDetector();
+// Export d'une instance singleton
+export const platformDetector = new PlatformDetector();
 
-// Exports
-export const detectPlatform = () => platformDetector.detectOS();
-export const detectBrowser = () => platformDetector.detectBrowser();
+// Export des fonctions utilitaires
+export const getPlatformInfo = () => platformDetector.getPlatformInfo();
+export const getInstallInstructions = () => platformDetector.getInstallInstructions();
 export const isStandalone = () => platformDetector.isStandalone();
-export const isMobile = () => platformDetector.isMobile();
-export const isTablet = () => platformDetector.isTablet();
-export const isPWAInstalled = () => platformDetector.isPWAInstalled();
-export const canInstallPWA = () => platformDetector.canInstallPWA();
-export const getDeviceInfo = () => platformDetector.getDeviceInfo();
-
-// Helper pour obtenir les instructions d'installation spécifiques
-export const getInstallInstructions = (): { title: string; steps: string[] } => {
-  const info = getDeviceInfo();
-  
-  if (info.platform === 'ios') {
-    return {
-      title: 'Installer sur votre iPhone/iPad',
-      steps: [
-        'Appuyez sur le bouton Partager en bas de Safari',
-        'Faites défiler et appuyez sur "Sur l\'écran d\'accueil"',
-        'Appuyez sur "Ajouter" en haut à droite',
-        'L\'application sera ajoutée à votre écran d\'accueil'
-      ]
-    };
-  }
-  
-  if (info.platform === 'android') {
-    if (info.browser === 'chrome') {
-      return {
-        title: 'Installer sur votre Android',
-        steps: [
-          'Appuyez sur le menu (3 points) en haut à droite',
-          'Sélectionnez "Installer l\'application"',
-          'Confirmez l\'installation',
-          'L\'application sera ajoutée à votre écran d\'accueil'
-        ]
-      };
-    }
-    
-    if (info.browser === 'samsung') {
-      return {
-        title: 'Installer sur Samsung Internet',
-        steps: [
-          'Appuyez sur le menu en bas',
-          'Sélectionnez "Ajouter la page à"',
-          'Choisissez "Écran d\'accueil"',
-          'Confirmez l\'ajout'
-        ]
-      };
-    }
-  }
-  
-  if (['windows', 'macos', 'linux'].includes(info.platform)) {
-    return {
-      title: 'Installer sur votre ordinateur',
-      steps: [
-        'Cliquez sur l\'icône d\'installation dans la barre d\'adresse',
-        'Ou utilisez le menu (3 points) > "Installer DGI Access"',
-        'Confirmez l\'installation',
-        'L\'application sera disponible comme une app native'
-      ]
-    };
-  }
-  
-  return {
-    title: 'Installation non disponible',
-    steps: ['Votre navigateur ne supporte pas l\'installation PWA']
-  };
-};
-
-export default platformDetector;
+export const supportsPWA = () => platformDetector.supportsPWA();
+export const getBrowserRecommendation = () => platformDetector.getBrowserRecommendation();

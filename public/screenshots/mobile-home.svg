@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="390" height="844" viewBox="0 0 390 844" xmlns="http://www.w3.org/2000/svg">
+  <rect width="390" height="844" fill="#f9fafb"/>
+  <rect x="0" y="0" width="390" height="100" fill="#059669"/>
+  <text x="195" y="60" font-family="Arial" font-size="20" font-weight="bold" text-anchor="middle" fill="white">DGI Access</text>
+  <rect x="20" y="120" width="350" height="200" fill="white" stroke="#e5e7eb" stroke-width="2" rx="8"/>
+  <text x="195" y="220" font-family="Arial" font-size="16" text-anchor="middle" fill="#111827">Accès Rapide</text>
+</svg>

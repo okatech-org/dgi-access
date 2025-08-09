@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="1668" height="2388" viewBox="0 0 1668 2388" xmlns="http://www.w3.org/2000/svg">
+  <!-- Fond avec gradient -->
+  <defs>
+    <linearGradient id="bg-gradient" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#059669;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#047857;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Arrière-plan -->
+  <rect width="1668" height="2388" fill="url(#bg-gradient)"/>
+  
+  <!-- Logo central -->
+  <g transform="translate(834, 1194)">
+    <!-- Conteneur blanc -->
+    <rect x="-100" y="-100" width="200" height="200" 
+          fill="white" rx="30" ry="30" opacity="0.95"/>
+    
+    <!-- Texte DGI -->
+    <text x="0" y="10" 
+          font-family="Arial, sans-serif" 
+          font-size="60" 
+          font-weight="bold" 
+          text-anchor="middle" 
+          fill="#059669">DGI</text>
+    
+    <!-- Sous-texte -->
+    <text x="0" y="50" 
+          font-family="Arial, sans-serif" 
+          font-size="24" 
+          text-anchor="middle" 
+          fill="#6b7280">ACCESS</text>
+  </g>
+  
+  <!-- Texte de chargement -->
+  <text x="834" y="2288" 
+        font-family="Arial, sans-serif" 
+        font-size="18" 
+        text-anchor="middle" 
+        fill="white" 
+        opacity="0.8">Chargement de l'application...</text>
+</svg>

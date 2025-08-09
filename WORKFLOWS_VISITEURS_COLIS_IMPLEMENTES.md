@@ -37,6 +37,7 @@ graph TD
 ## 🔧 **Composants Implémentés**
 
 ### **1. Types et Interfaces (`src/types/visitor-process.ts`)**
+
 - ✅ **VisitorRegistrationData** - Structure complète visiteur
 - ✅ **PackageRegistrationData** - Structure complète colis
 - ✅ **Appointment** - Gestion des rendez-vous
@@ -46,6 +47,7 @@ graph TD
 - ✅ **AuditEntry** - Traçabilité et audit
 
 ### **2. Service Principal (`src/services/visitor-package-service.ts`)**
+
 - ✅ **registerVisitor()** - Enregistrement visiteur complet
 - ✅ **registerPackage()** - Enregistrement colis complet
 - ✅ **checkOutVisitor()** - Sortie visiteur
@@ -56,6 +58,7 @@ graph TD
 - ✅ **Audit Trail** - Traçabilité complète
 
 ### **3. Workflow Visiteur (`src/components/workflow/VisitorWorkflow.tsx`)**
+
 - ✅ **Processus en 5 étapes** avec navigation
 - ✅ **Validation en temps réel** à chaque étape
 - ✅ **Barre de progression** visuelle
@@ -65,6 +68,7 @@ graph TD
 ### **4. Étapes du Workflow Visiteur**
 
 #### **Étape 1 : Identité (`StepIdentity.tsx`)**
+
 - ✅ **Saisie manuelle** ou **extraction IA**
 - ✅ **Capture photo** depuis caméra ou upload
 - ✅ **Analyse automatique** des documents d'identité
@@ -72,6 +76,7 @@ graph TD
 - ✅ **Support** CNI, Passeport, Permis
 
 #### **Étape 2 : Badge (`StepBadge.tsx`)**
+
 - ✅ **Sélection zones d'accès** avec niveaux de sécurité
 - ✅ **Attribution automatique** badge compatible
 - ✅ **Gestion batterie** et maintenance badges
@@ -79,6 +84,7 @@ graph TD
 - ✅ **Estimation retour** basée sur durée
 
 #### **Étape 3 : Type de Visite (`StepVisitType.tsx`)**
+
 - ✅ **Rendez-vous planifiés** ou visites spontanées
 - ✅ **Motifs prédéfinis** (réunion, livraison, prestation, etc.)
 - ✅ **Niveaux d'urgence** (normal, urgent, très urgent)
@@ -86,6 +92,7 @@ graph TD
 - ✅ **Gestion accompagnants**
 
 #### **Étape 4 : Destination (`StepDestination.tsx`)**
+
 - ✅ **Grilles DGI intégrées** - 35 employés, 13 services
 - ✅ **Recherche intelligente** par nom, matricule, service
 - ✅ **Employés populaires** (Direction et Responsables)
@@ -93,12 +100,14 @@ graph TD
 - ✅ **Sélection employé** ou service avec détails
 
 #### **Étape 5 : Confirmation (`StepConfirmation.tsx`)**
+
 - ✅ **Récapitulatif complet** toutes informations
 - ✅ **Horaires calculés** (arrivée, durée, sortie estimée)
 - ✅ **Actions automatiques** (badge, notification, récépissé)
 - ✅ **Consignes sécurité** et règles DGI
 
 ### **5. Workflow Colis (`src/components/workflow/PackageWorkflow.tsx`)**
+
 - ✅ **Documentation photo** avec caméra/upload
 - ✅ **Types de colis** (document, colis, courrier, recommandé)
 - ✅ **Informations détaillées** (suivi, transporteur, poids)
@@ -112,6 +121,7 @@ graph TD
 ## 🎨 **Interface Utilisateur**
 
 ### **Design et Expérience**
+
 - ✅ **Interface moderne** avec Tailwind CSS
 - ✅ **Navigation intuitive** avec étapes visuelles
 - ✅ **Responsive design** mobile et desktop
@@ -120,6 +130,7 @@ graph TD
 - ✅ **Messages d'aide** contextuels
 
 ### **Accessibilité**
+
 - ✅ **Validation en temps réel** avec messages clairs
 - ✅ **Navigation clavier** complète
 - ✅ **Contrastes optimisés** pour lisibilité
@@ -131,6 +142,7 @@ graph TD
 ## 🔄 **Intégration Application**
 
 ### **Routage Mis à Jour (`SimpleMainContent.tsx`)**
+
 - ✅ **Route `/visitor-workflow`** - Processus visiteur complet
 - ✅ **Route `/package-workflow`** - Processus colis complet
 - ✅ **Page d'accueil enrichie** avec accès rapide
@@ -138,6 +150,7 @@ graph TD
 - ✅ **Gestion callbacks** pour résultats
 
 ### **Page d'Accueil Améliorée**
+
 - ✅ **Cartes modules** réorganisées (4 colonnes)
 - ✅ **Section "Processus Guidés"** avec accès direct
 - ✅ **Liens visuels** vers nouveaux workflows
@@ -148,6 +161,7 @@ graph TD
 ## 🤖 **Fonctionnalités IA Intégrées**
 
 ### **Extraction Documents d'Identité**
+
 - ✅ **Capture caméra** optimisée mobile
 - ✅ **Upload fichiers** images
 - ✅ **Simulation extraction** IA (prêt pour vraie API)
@@ -156,6 +170,7 @@ graph TD
 - ✅ **Confidence score** affiché
 
 ### **Préparé pour Production**
+
 ```typescript
 // Prêt pour intégration API réelle
 const handleAIScan = async (file: File) => {
@@ -177,6 +192,7 @@ const handleAIScan = async (file: File) => {
 ## 📋 **Gestion des Données**
 
 ### **Structure LocalStorage**
+
 ```typescript
 // Stockage organisé par entité
 visitor_${id}     // Données visiteur
@@ -188,6 +204,7 @@ notification_${id} // Notifications
 ```
 
 ### **Données DGI Réelles Intégrées**
+
 - ✅ **35 employés** avec matricules authentiques
 - ✅ **13 services** selon organigramme officiel
 - ✅ **Grilles de sélection** intelligentes
@@ -199,6 +216,7 @@ notification_${id} // Notifications
 ## 🔔 **Système de Notifications**
 
 ### **Notifications Automatiques**
+
 - ✅ **Arrivée visiteur** → Employé/Service destinataire
 - ✅ **Arrivée colis** → Employé/Service destinataire
 - ✅ **Formats configurables** (Email, SMS, les deux)
@@ -206,7 +224,8 @@ notification_${id} // Notifications
 - ✅ **Retry automatique** en cas d'échec
 
 ### **Exemple Notification Visiteur**
-```
+
+```text
 Bonjour Jean OBAME,
 
 Un visiteur vous attend à l'accueil.
@@ -230,7 +249,8 @@ Système DGI Access
 ## 🧾 **Génération de Récépissés**
 
 ### **Récépissé Visiteur**
-```
+
+```text
 ╔══════════════════════════════════════════════════╗
 ║              RÉCÉPISSÉ DE VISITE DGI             ║
 ╠══════════════════════════════════════════════════╣
@@ -253,7 +273,8 @@ Système DGI Access
 ```
 
 ### **Récépissé Colis**
-```
+
+```text
 ╔══════════════════════════════════════════════════╗
 ║           RÉCÉPISSÉ COLIS/COURRIER DGI           ║
 ╠══════════════════════════════════════════════════╣
@@ -271,6 +292,7 @@ Système DGI Access
 ## 🔐 **Sécurité et Contrôles**
 
 ### **Niveaux de Sécurité Zones**
+
 - ✅ **Niveau 0** - Public (Accueil, Cafétéria)
 - ✅ **Niveau 1** - Restreint (Bureaux RDC, Réunions)
 - ✅ **Niveau 2** - Contrôlé (Bureaux étages)
@@ -278,6 +300,7 @@ Système DGI Access
 - ✅ **Niveau 4** - Critique (Salle serveur)
 
 ### **Gestion des Badges**
+
 - ✅ **Attribution automatique** selon zones
 - ✅ **Compatibilité vérifiée** zones demandées
 - ✅ **Suivi batterie** et maintenance
@@ -289,6 +312,7 @@ Système DGI Access
 ## 📊 **Statistiques et Audit**
 
 ### **Données Collectées**
+
 - ✅ **Registre complet** visiteurs et colis
 - ✅ **Temps de visite** réels vs estimés
 - ✅ **Utilisation badges** et zones
@@ -296,6 +320,7 @@ Système DGI Access
 - ✅ **Audit trail** toutes actions
 
 ### **Métriques Disponibles**
+
 ```typescript
 // Statistiques visiteurs
 {
@@ -324,13 +349,15 @@ Système DGI Access
 ### **1. Accès aux Workflows**
 
 #### **Depuis la Page d'Accueil**
-```
+
+```text
 http://localhost:5173/
 → Cliquer sur "Nouveau Visiteur" ou "Nouveau Colis"
 ```
 
 #### **URLs Directes**
-```
+
+```text
 http://localhost:5173/visitor-workflow  → Enregistrement visiteur
 http://localhost:5173/package-workflow  → Enregistrement colis
 ```
@@ -338,30 +365,35 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 ### **2. Processus Visiteur (5 étapes)**
 
 #### **Étape 1 : Identité**
+
 1. Choisir : Saisie manuelle OU Scan IA
 2. Si scan IA : Prendre photo ou uploader document
 3. Vérifier/corriger données extraites
 4. Compléter informations manquantes
 
 #### **Étape 2 : Badge**
+
 1. Décider si badge requis
 2. Sélectionner zones d'accès nécessaires
 3. Le système propose badges compatibles
 4. Choisir badge avec niveau batterie optimal
 
 #### **Étape 3 : Type de visite**
+
 1. Indiquer si rendez-vous prévu
 2. Sélectionner motif (réunion, livraison, etc.)
 3. Définir urgence et durée estimée
 4. Ajouter description détaillée
 
 #### **Étape 4 : Destination**
+
 1. Choisir : Employé spécifique OU Service
 2. Utiliser grilles DGI ou recherche
 3. Sélectionner dans employés/services populaires
 4. Préciser lieu de rendez-vous
 
 #### **Étape 5 : Confirmation**
+
 1. Vérifier récapitulatif complet
 2. Confirmer horaires calculés
 3. Valider pour enregistrement
@@ -370,22 +402,26 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 ### **3. Processus Colis (4 sections)**
 
 #### **Section 1 : Documentation**
+
 1. Prendre photo du colis
 2. Documenter état réception
 
 #### **Section 2 : Informations Colis**
+
 1. Sélectionner type (document, colis, courrier, recommandé)
 2. Saisir numéro suivi et transporteur
 3. Indiquer poids, dimensions
 4. Cocher options (fragile, urgent, confidentiel)
 
 #### **Section 3 : Destinataire**
+
 1. Utiliser grilles employés/services DGI
 2. Rechercher destinataire
 3. Configurer notifications
 4. Ajouter instructions livraison
 
 #### **Section 4 : Expéditeur & Validation**
+
 1. Saisir informations expéditeur
 2. Vérifier récapitulatif
 3. Valider enregistrement
@@ -396,6 +432,7 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 ## ✅ **Tests et Validation**
 
 ### **Tests Fonctionnels Effectués**
+
 - ✅ **Navigation workflow** - Toutes étapes
 - ✅ **Validation données** - Champs requis
 - ✅ **Grilles sélection** - Employés et services
@@ -405,6 +442,7 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 - ✅ **Intégration routing** - Navigation app
 
 ### **Données Tests Disponibles**
+
 - ✅ **35 employés DGI** avec données réelles
 - ✅ **13 services** selon organigramme
 - ✅ **Badges simulés** avec zones et batterie
@@ -415,6 +453,7 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 ## 🔧 **Points d'Extension Future**
 
 ### **Intégrations Prêtes**
+
 - 🔄 **API extraction IA** réelle (OCR, Computer Vision)
 - 🔄 **Base de données** distante (PostgreSQL, MongoDB)
 - 🔄 **Notifications** email/SMS (SendGrid, Twilio)
@@ -423,6 +462,7 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 - 🔄 **Analytics** avancées (Tableau de bord)
 
 ### **Améliorations Possibles**
+
 - 🔄 **Reconnaissance faciale** pour employés
 - 🔄 **Géolocalisation** intérieure (badges IoT)
 - 🔄 **Planning** rendez-vous intégré
@@ -435,12 +475,14 @@ http://localhost:5173/package-workflow  → Enregistrement colis
 ## 📱 **Compatibilité**
 
 ### **Navigateurs Supportés**
+
 - ✅ **Chrome/Edge** 90+ (Recommandé)
 - ✅ **Firefox** 88+
 - ✅ **Safari** 14+
 - ✅ **Mobile** - Responsive design
 
 ### **Fonctionnalités Caméra**
+
 - ✅ **Desktop** - Webcam pour capture
 - ✅ **Mobile** - Caméra arrière optimisée
 - ✅ **Fallback** - Upload fichier si caméra indisponible
@@ -468,11 +510,12 @@ Le système est **entièrement fonctionnel** et peut être déployé immédiatem
 
 ### **👉 Accès Immédiat**
 
-**URL Application :** http://localhost:5173/
+**URL Application :** <http://localhost:5173/>
 
 **Workflows Directs :**
-- **Visiteurs :** http://localhost:5173/visitor-workflow
-- **Colis :** http://localhost:5173/package-workflow
+
+- **Visiteurs :** <http://localhost:5173/visitor-workflow>
+- **Colis :** <http://localhost:5173/package-workflow>
 
 ---
 

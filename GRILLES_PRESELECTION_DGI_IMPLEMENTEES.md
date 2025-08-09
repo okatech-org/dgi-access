@@ -311,6 +311,7 @@ Réception: reception@dgi.ga / reception123
 - ✅ **Traçabilité complète** visiteur ↔ employé ↔ service
 
 ### **🚀 Système Opérationnel :**
+
 **Les grilles de formulaire "Service concerné", "Personne à rencontrer" et "Département" sont maintenant pré-sélectionnables avec des données préremplies DGI authentiques !**
 
 **Le volet Personnel est créé dans le menu avec gestion complète des employés et services !**
