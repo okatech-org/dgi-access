@@ -96,7 +96,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
         <nav className="space-y-0.5 md:space-y-1">
           <div className="flex items-center gap-2 w-full">
             <img 
-              src="/logo IMPOTS.PNG" 
+              src="/logo-dgi.png" 
               alt="Logo DGI" 
               className="h-11 w-auto" 
             />
@@ -140,7 +140,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, activeModule, onModule
           })}
           <div className="mx-auto">
             <img 
-              src="/logo IMPOTS.PNG" 
+              src="/logo-dgi.png" 
               alt="Logo IMPOTS" 
               className="h-14 w-auto" 
             />

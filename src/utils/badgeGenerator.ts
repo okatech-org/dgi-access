@@ -81,7 +81,7 @@ export const formatBadgeForPrint = (badgeData: BadgeData): string => {
   return `
     <div class="badge-print" style="width: 86mm; height: 54mm; border: 1px solid #000; padding: 4mm; font-family: Arial, sans-serif;">
       <div style="display: flex; align-items: center; margin-bottom: 2mm;">
-        <img src="/logo IMPOTS.PNG" style="width: 15mm; height: 15mm; margin-right: 3mm;" />
+        <img src="/logo-dgi.png" style="width: 15mm; height: 15mm; margin-right: 3mm;" />
         <div>
           <div style="font-size: 8pt; font-weight: bold;">RÉPUBLIQUE GABONAISE</div>
           <div style="font-size: 7pt;">Direction Générale de la Documentation et de l'Immigration</div>

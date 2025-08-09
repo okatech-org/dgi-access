@@ -144,7 +144,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick, onNavigateToProfile
             {/* Logo et titre - RESPONSIVE */}
             <div className="flex items-center gap-2 md:gap-3">
               <img
-                src="/logo IMPOTS.PNG"
+                src="/logo-dgi.png"
                 alt="Logo DGI" 
                 className="h-7 md:h-9 w-auto"
               />

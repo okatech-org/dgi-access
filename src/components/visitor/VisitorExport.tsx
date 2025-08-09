@@ -133,7 +133,7 @@ export const VisitorExport: React.FC<VisitorExportProps> = ({
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <img 
-                src="/logo DGI.PNG" 
+                src="/logo-dgi.png" 
                 alt="Logo DGI"
                 className="h-12 w-auto"
               />

@@ -103,7 +103,7 @@ export const AppleLoginScreen: React.FC<AppleLoginScreenProps> = ({ onBackToHome
         <div className="text-center mb-8">
           <div className="glass rounded-3xl p-4 inline-block mb-6">
             <img 
-              src="/logo IMPOTS.PNG" 
+              src="/logo-dgi.png" 
               alt="Logo IMPOTS" 
               className="h-16 w-auto"
             />

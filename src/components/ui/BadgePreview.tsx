@@ -44,7 +44,7 @@ export const BadgePreview: React.FC<BadgePreviewProps> = ({ badgeData, onPrint, 
               {/* Header */}
               <div className="flex items-center gap-3 mb-3">
                 <img 
-                  src="/logo DGI.PNG" 
+                  src="/logo-dgi.png" 
                   alt="Logo DGI" 
                   className="h-6 w-auto"
                 />

@@ -32,7 +32,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToLogin }) => {
           <div className="flex justify-between items-center py-4">
             <div className="flex items-center gap-2">
               <img 
-                src="/logo DGI.PNG" 
+                src="/logo-dgi.png" 
                 alt="Logo DGI" 
                 className="h-12 sm:h-14 w-auto"
               />
@@ -186,7 +186,7 @@ export const HomePage: React.FC<HomePageProps> = ({ onNavigateToLogin }) => {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <div className="flex items-center justify-center gap-2 mb-2">
               <img 
-                src="/logo IMPOTS.PNG"
+                src="/logo-dgi.png"
                 alt="Logo DGI" 
                 className="h-10 w-auto"
               />

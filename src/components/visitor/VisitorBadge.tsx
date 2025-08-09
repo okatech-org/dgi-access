@@ -35,7 +35,7 @@ export const VisitorBadge: React.FC<VisitorBadgeProps> = ({ visitor, className =
       <div className="bg-blue-600 text-white p-3">
         <div className="flex items-center gap-2">
           <img 
-            src="/logo DGI.PNG"
+            src="/logo-dgi.png"
             alt="Logo DGI" 
             className="h-10 w-auto bg-white rounded p-1"
           />

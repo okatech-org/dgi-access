@@ -90,7 +90,7 @@ export const LoginScreen: React.FC<LoginScreenProps> = ({ onBackToHome }) => {
         <div className="text-center mb-6">
           <div className="flex justify-center mb-4">
             <img
-              src="/logo IMPOTS.PNG"
+              src="/logo-dgi.png"
               alt="Logo DGI"
               className="h-20 w-auto bg-white rounded-full p-1 shadow-lg"
             />
