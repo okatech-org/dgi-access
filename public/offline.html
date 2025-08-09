@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DGI Access - Mode Hors Ligne</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 500px;
+            width: 100%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            text-align: center;
+            animation: slideUp 0.5s ease-out;
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .offline-icon {
+            width: 100px;
+            height: 100px;
+            margin: 0 auto 30px;
+            background: #f3f4f6;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+        }
+        
+        .offline-icon svg {
+            width: 50px;
+            height: 50px;
+            color: #6b7280;
+        }
+        
+        .offline-icon::after {
+            content: '';
+            position: absolute;
+            bottom: 5px;
+            right: 5px;
+            width: 30px;
+            height: 30px;
+            background: #ef4444;
+            border-radius: 50%;
+            border: 4px solid white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        h1 {
+            color: #1f2937;
+            font-size: 28px;
+            margin-bottom: 15px;
+            font-weight: 700;
+        }
+        
+        p {
+            color: #6b7280;
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+        
+        .retry-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            font-size: 16px;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        
+        .retry-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.4);
+        }
+        
+        .retry-button:active {
+            transform: translateY(0);
+        }
+        
+        .status {
+            margin-top: 30px;
+            padding: 15px;
+            background: #fef3c7;
+            border-radius: 10px;
+            color: #92400e;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.checking {
+            display: block;
+            background: #dbeafe;
+            color: #1e40af;
+        }
+        
+        .status.online {
+            display: block;
+            background: #d1fae5;
+            color: #065f46;
+        }
+        
+        .cached-info {
+            margin-top: 30px;
+            padding-top: 30px;
+            border-top: 1px solid #e5e7eb;
+            color: #9ca3af;
+            font-size: 14px;
+        }
+        
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            border-top-color: white;
+            animation: spin 1s ease-in-out infinite;
+            margin-left: 10px;
+            vertical-align: middle;
+        }
+        
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="offline-icon">
+            <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                      d="M8.111 16.404a5.5 5.5 0 017.778 0M12 20h.01m-7.08-7.071c3.904-3.905 10.236-3.905 14.141 0M1.394 9.393c5.857-5.857 15.355-5.857 21.213 0">
+                </path>
+            </svg>
+        </div>
+        
+        <h1>Mode Hors Ligne</h1>
+        
+        <p>
+            Vous êtes actuellement hors ligne. L'application DGI Access fonctionne en mode dégradé 
+            avec les données mises en cache. Certaines fonctionnalités peuvent être limitées.
+        </p>
+        
+        <button class="retry-button" onclick="checkConnection()">
+            Vérifier la connexion
+        </button>
+        
+        <div id="status" class="status"></div>
+        
+        <div class="cached-info">
+            <strong>Données disponibles hors ligne :</strong><br>
+            • Liste du personnel<br>
+            • Services et départements<br>
+            • Derniers visiteurs consultés<br>
+            • Formulaires de base
+        </div>
+    </div>
+    
+    <script>
+        // Vérifier automatiquement la connexion
+        function checkConnection() {
+            const statusEl = document.getElementById('status');
+            statusEl.className = 'status checking';
+            statusEl.innerHTML = 'Vérification de la connexion...<span class="spinner"></span>';
+            
+            // Essayer de faire un fetch pour vérifier la connexion
+            fetch('/manifest.json', { method: 'HEAD' })
+                .then(() => {
+                    statusEl.className = 'status online';
+                    statusEl.innerHTML = '✓ Connexion rétablie ! Redirection...';
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 1500);
+                })
+                .catch(() => {
+                    statusEl.className = 'status';
+                    statusEl.style.display = 'block';
+                    statusEl.innerHTML = '✗ Toujours hors ligne. Veuillez vérifier votre connexion internet.';
+                    setTimeout(() => {
+                        statusEl.style.display = 'none';
+                    }, 3000);
+                });
+        }
+        
+        // Écouter le retour en ligne
+        window.addEventListener('online', () => {
+            checkConnection();
+        });
+        
+        // Vérifier toutes les 5 secondes
+        setInterval(() => {
+            if (navigator.onLine) {
+                checkConnection();
+            }
+        }, 5000);
+    </script>
+</body>
+</html>

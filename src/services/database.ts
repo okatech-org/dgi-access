@@ -42,6 +42,12 @@ class DatabaseService {
     return this.getEmployees().filter(e => e.service.id === serviceId);
   }
 
+  async deleteEmployee(id: string): Promise<void> {
+    const employees = this.getEmployees();
+    const filteredEmployees = employees.filter(emp => emp.id !== id);
+    localStorage.setItem(this.STORAGE_KEYS.EMPLOYEES, JSON.stringify(filteredEmployees));
+  }
+
   searchEmployee(query: string): Employee[] {
     const employees = this.getEmployees();
     const lowQuery = query.toLowerCase();
@@ -54,12 +60,6 @@ class DatabaseService {
       e.position.toLowerCase().includes(lowQuery) ||
       e.email.toLowerCase().includes(lowQuery)
     );
-  }
-
-  async deleteEmployee(id: string): Promise<void> {
-    const employees = this.getEmployees();
-    const filtered = employees.filter(e => e.id !== id);
-    localStorage.setItem(this.STORAGE_KEYS.EMPLOYEES, JSON.stringify(filtered));
   }
 
   // ===== SERVICES =====

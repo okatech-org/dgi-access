@@ -5,6 +5,10 @@ import { LoginScreen } from './components/LoginScreen';
 import { SimpleDashboard } from './components/SimpleDashboard';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import { Toaster } from './components/ui/Toaster';
+import PWAInstallPrompt from './components/PWAInstallPrompt';
+import OfflineIndicator from './components/OfflineIndicator';
+import ServiceWorkerUpdatePrompt from './components/ServiceWorkerUpdatePrompt';
+import useServiceWorker from './hooks/useServiceWorker';
 
 /**
  * Route protégée qui nécessite une authentification
@@ -138,10 +142,18 @@ function AppContent() {
 }
 
 function App() {
+  const { showUpdatePrompt, setShowUpdatePrompt, updateServiceWorker } = useServiceWorker();
   return (
     <BrowserRouter>
       <AuthProvider>
         <AppContent />
+        <OfflineIndicator />
+        <PWAInstallPrompt />
+        <ServiceWorkerUpdatePrompt 
+          show={showUpdatePrompt}
+          onUpdate={updateServiceWorker}
+          onDismiss={() => setShowUpdatePrompt(false)}
+        />
       </AuthProvider>
     </BrowserRouter>
   );

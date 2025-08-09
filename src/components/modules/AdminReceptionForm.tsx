@@ -13,14 +13,18 @@ interface AdminReceptionFormProps {
   onSubmit: (visitor: Omit<Visitor, 'id' | 'checkInTime' | 'badgeNumber'>) => void;
 }
 
-// Composant grille de sélection employés
+// Composant grille de sélection employés avec pré-sélections par service
 const EmployeeGrid: React.FC<{
   employees: Employee[];
   onSelect: (employee: Employee) => void;
   selectedEmployee?: Employee;
   searchTerm: string;
-}> = ({ employees, onSelect, selectedEmployee, searchTerm }) => {
-  const filteredEmployees = employees.filter(emp => 
+  selectedService?: Service;
+}> = ({ employees, onSelect, selectedEmployee, searchTerm, selectedService }) => {
+  const [selectedServiceFilter, setSelectedServiceFilter] = useState<string>('');
+  
+  // Filtrage des employés
+  let filteredEmployees = employees.filter(emp => 
     emp.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     emp.matricule.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -28,90 +32,224 @@ const EmployeeGrid: React.FC<{
     emp.position.toLowerCase().includes(searchTerm.toLowerCase())
   );
 
+  // Filtrage par service si sélectionné
+  if (selectedServiceFilter) {
+    filteredEmployees = filteredEmployees.filter(emp => emp.service.id === selectedServiceFilter);
+  }
+
+  // Si un service est pré-sélectionné, filtrer automatiquement
+  if (selectedService && !selectedServiceFilter && searchTerm === '') {
+    filteredEmployees = employees.filter(emp => emp.service.id === selectedService.id);
+  }
+
+  // Services uniques pour les filtres
+  const uniqueServices = Array.from(new Set(employees.map(emp => emp.service.id)))
+    .map(serviceId => employees.find(emp => emp.service.id === serviceId)?.service)
+    .filter(Boolean) as Service[];
+
+  // Responsables et directeurs (pré-sélection)
+  const managementEmployees = employees.filter(emp => 
+    emp.position.toLowerCase().includes('directeur') ||
+    emp.position.toLowerCase().includes('responsable') ||
+    emp.position.toLowerCase().includes('chef')
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
-      {filteredEmployees.slice(0, 12).map(employee => (
-        <div
-          key={employee.id}
-          onClick={() => onSelect(employee)}
-          className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-            selectedEmployee?.id === employee.id
-              ? 'border-blue-500 bg-blue-50 shadow-lg'
-              : 'border-gray-200 hover:border-blue-300'
+    <div className="space-y-4">
+      {/* Filtres par service */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setSelectedServiceFilter('')}
+          className={`px-3 py-1 text-xs rounded-full transition-all ${
+            selectedServiceFilter === '' 
+              ? 'bg-blue-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 text-sm">
-                {employee.firstName} {employee.lastName}
-              </h4>
-              <p className="text-xs text-blue-600 font-medium">{employee.matricule}</p>
-            </div>
-            {selectedEmployee?.id === employee.id && (
-              <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            )}
+          Tous les services
+        </button>
+        {uniqueServices.slice(0, 6).map(service => (
+          <button
+            key={service.id}
+            onClick={() => setSelectedServiceFilter(service.id)}
+            className={`px-3 py-1 text-xs rounded-full transition-all ${
+              selectedServiceFilter === service.id 
+                ? 'bg-blue-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {service.code}
+          </button>
+        ))}
+      </div>
+
+      {/* Employés pré-sélectionnés (Direction et Responsables) */}
+      {searchTerm === '' && selectedServiceFilter === '' && !selectedService && (
+        <div className="mb-4">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">👥 Direction et Responsables</h5>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-2">
+            {managementEmployees.slice(0, 8).map(employee => (
+              <button
+                key={employee.id}
+                onClick={() => onSelect(employee)}
+                className={`p-2 text-left border rounded-lg text-xs transition-all ${
+                  selectedEmployee?.id === employee.id
+                    ? 'border-blue-500 bg-blue-50 text-blue-900'
+                    : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                }`}
+              >
+                <div className="font-medium">{employee.firstName} {employee.lastName}</div>
+                <div className="text-gray-600">{employee.service.code} • {employee.position}</div>
+              </button>
+            ))}
           </div>
-          
-          <div className="space-y-1">
-            <p className="text-xs text-gray-600">{employee.position}</p>
-            <p className="text-xs text-green-600 font-medium">{employee.service.code}</p>
-            <div className="flex justify-between text-xs text-gray-500">
-              <span>Bureau {employee.office}</span>
-              <span>{employee.floor}</span>
-            </div>
-          </div>
-        </div>
-      ))}
-      
-      {filteredEmployees.length === 0 && (
-        <div className="col-span-full text-center py-8">
-          <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
-          <p className="text-gray-500">Aucun employé trouvé</p>
         </div>
       )}
-      
-      {filteredEmployees.length > 12 && (
-        <div className="col-span-full text-center text-sm text-gray-500">
-          Affichage de 12 sur {filteredEmployees.length} employés. Affinez votre recherche.
-        </div>
-      )}
+
+      {/* Grille complète des employés */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-96 overflow-y-auto">
+        {filteredEmployees.slice(0, 12).map(employee => (
+          <div
+            key={employee.id}
+            onClick={() => onSelect(employee)}
+            className={`p-3 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+              selectedEmployee?.id === employee.id
+                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                : 'border-gray-200 hover:border-blue-300'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 text-sm">
+                  {employee.firstName} {employee.lastName}
+                </h4>
+                <p className="text-xs text-blue-600 font-medium">{employee.matricule}</p>
+              </div>
+              {selectedEmployee?.id === employee.id && (
+                <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              )}
+            </div>
+            
+            <div className="space-y-1">
+              <p className="text-xs text-gray-600">{employee.position}</p>
+              <p className="text-xs text-green-600 font-medium">{employee.service.code}</p>
+              <div className="flex justify-between text-xs text-gray-500">
+                <span>Bureau {employee.office}</span>
+                <span>{employee.floor}</span>
+              </div>
+            </div>
+          </div>
+        ))}
+        
+        {filteredEmployees.length === 0 && (
+          <div className="col-span-full text-center py-8">
+            <Users className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+            <p className="text-gray-500">Aucun employé trouvé</p>
+          </div>
+        )}
+        
+        {filteredEmployees.length > 12 && (
+          <div className="col-span-full text-center text-sm text-gray-500">
+            Affichage de 12 sur {filteredEmployees.length} employés. Affinez votre recherche.
+          </div>
+        )}
+      </div>
     </div>
   );
 };
 
-// Composant grille de sélection services
+// Composant grille de sélection services avec pré-sélection
 const ServiceGrid: React.FC<{
   services: Service[];
   onSelect: (service: Service) => void;
   selectedService?: Service;
-}> = ({ services, onSelect, selectedService }) => {
+  showPreselected?: boolean;
+}> = ({ services, onSelect, selectedService, showPreselected = true }) => {
+  const [filter, setFilter] = useState('');
+  
+  const filteredServices = services.filter(service =>
+    service.name.toLowerCase().includes(filter.toLowerCase()) ||
+    service.code.toLowerCase().includes(filter.toLowerCase()) ||
+    service.description.toLowerCase().includes(filter.toLowerCase())
+  );
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-      {services.map(service => (
-        <div
-          key={service.id}
-          onClick={() => onSelect(service)}
-          className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
-            selectedService?.id === service.id
-              ? 'border-blue-500 bg-blue-50 shadow-lg'
-              : 'border-gray-200 hover:border-blue-300'
-          }`}
-        >
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex-1">
-              <h4 className="font-medium text-gray-900 text-sm">{service.name}</h4>
-              <p className="text-xs text-blue-600 font-medium">({service.code})</p>
-            </div>
-            {selectedService?.id === service.id && (
-              <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            )}
-          </div>
-          <p className="text-xs text-gray-600 mb-2">{service.description}</p>
-          <div className="text-xs text-gray-500">
-            <p>📍 {service.location}</p>
+    <div className="space-y-4">
+      {/* Barre de recherche pour services */}
+      <div className="relative">
+        <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          placeholder="Rechercher un service DGI..."
+          value={filter}
+          onChange={(e) => setFilter(e.target.value)}
+          className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+        />
+      </div>
+
+      {/* Services pré-sélectionnés (les plus utilisés) */}
+      {showPreselected && filter === '' && (
+        <div className="mb-4">
+          <h5 className="text-sm font-medium text-gray-700 mb-2">🎯 Services les plus demandés</h5>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
+            {['DG', 'DLIF', 'DGEF', 'DRF'].map(code => {
+              const service = services.find(s => s.code === code);
+              if (!service) return null;
+              return (
+                <button
+                  key={service.id}
+                  onClick={() => onSelect(service)}
+                  className={`p-2 text-left border rounded-lg text-sm transition-all ${
+                    selectedService?.id === service.id
+                      ? 'border-blue-500 bg-blue-50 text-blue-900'
+                      : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+                  }`}
+                >
+                  <div className="font-medium">{service.code}</div>
+                  <div className="text-xs text-gray-600 truncate">{service.name}</div>
+                </button>
+              );
+            })}
           </div>
         </div>
-      ))}
+      )}
+
+      {/* Grille complète des services */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 max-h-64 overflow-y-auto">
+        {filteredServices.map(service => (
+          <div
+            key={service.id}
+            onClick={() => onSelect(service)}
+            className={`p-4 border rounded-lg cursor-pointer transition-all hover:shadow-md ${
+              selectedService?.id === service.id
+                ? 'border-blue-500 bg-blue-50 shadow-lg'
+                : 'border-gray-200 hover:border-blue-300'
+            }`}
+          >
+            <div className="flex items-start justify-between mb-2">
+              <div className="flex-1">
+                <h4 className="font-medium text-gray-900 text-sm">{service.name}</h4>
+                <p className="text-xs text-blue-600 font-medium">({service.code})</p>
+              </div>
+              {selectedService?.id === service.id && (
+                <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+              )}
+            </div>
+            <p className="text-xs text-gray-600 mb-2">{service.description}</p>
+            <div className="text-xs text-gray-500">
+              <p>📍 {service.location}</p>
+              <p>👥 {service.employees?.length || 0} employés</p>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {filteredServices.length === 0 && (
+        <div className="text-center py-8">
+          <Building className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+          <p className="text-gray-500">Aucun service trouvé</p>
+        </div>
+      )}
     </div>
   );
 };
@@ -152,33 +290,151 @@ const CompanyGrid: React.FC<{
   );
 };
 
-// Composant grille de motifs
+// Composant grille de motifs avec pré-sélections par catégorie
 const PurposeGrid: React.FC<{
   purposes: string[];
   onSelect: (purpose: string) => void;
   selectedPurpose: string;
 }> = ({ purposes, onSelect, selectedPurpose }) => {
+  const [selectedCategory, setSelectedCategory] = useState<string>('');
+  
+  // Catégorisation des motifs
+  const categories = {
+    'fiscal': {
+      name: 'Fiscalité',
+      keywords: ['déclaration', 'fiscal', 'tva', 'impôt'],
+      icon: '📊'
+    },
+    'controle': {
+      name: 'Contrôle',
+      keywords: ['contrôle', 'vérification', 'audit'],
+      icon: '🔍'
+    },
+    'formation': {
+      name: 'Formation',
+      keywords: ['formation', 'sydonia'],
+      icon: '🎓'
+    },
+    'recouvrement': {
+      name: 'Recouvrement',
+      keywords: ['recouvrement', 'négociation', 'échéancier'],
+      icon: '💰'
+    },
+    'juridique': {
+      name: 'Juridique',
+      keywords: ['juridique', 'consultation', 'réclamation'],
+      icon: '⚖️'
+    }
+  };
+
+  // Motifs populaires (les plus utilisés)
+  const popularPurposes = [
+    'Déclaration fiscale annuelle',
+    'Déclaration TVA trimestrielle',
+    'Formation système informatique SYDONIA',
+    'Consultation juridique fiscale'
+  ];
+
+  // Filtrage par catégorie
+  const filteredPurposes = selectedCategory 
+    ? purposes.filter(purpose => {
+        const category = categories[selectedCategory as keyof typeof categories];
+        return category.keywords.some(keyword => 
+          purpose.toLowerCase().includes(keyword.toLowerCase())
+        );
+      })
+    : purposes;
+
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
-      {purposes.map(purpose => (
-        <div
-          key={purpose}
-          onClick={() => onSelect(purpose)}
-          className={`p-3 border rounded-lg cursor-pointer transition-all text-sm ${
-            selectedPurpose === purpose
-              ? 'border-blue-500 bg-blue-50 text-blue-900'
-              : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+    <div className="space-y-4">
+      {/* Motifs populaires */}
+      <div className="mb-4">
+        <h5 className="text-sm font-medium text-gray-700 mb-2">🎯 Motifs les plus fréquents</h5>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+          {popularPurposes.map(purpose => (
+            <button
+              key={purpose}
+              onClick={() => onSelect(purpose)}
+              className={`p-2 text-left border rounded-lg text-sm transition-all ${
+                selectedPurpose === purpose
+                  ? 'border-blue-500 bg-blue-50 text-blue-900'
+                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="font-medium truncate">{purpose}</div>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* Filtres par catégorie */}
+      <div className="flex flex-wrap gap-2">
+        <button
+          onClick={() => setSelectedCategory('')}
+          className={`px-3 py-1 text-xs rounded-full transition-all ${
+            selectedCategory === '' 
+              ? 'bg-purple-600 text-white' 
+              : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
           }`}
         >
-          <div className="flex items-start gap-2">
-            <FileText className="w-4 h-4 text-gray-400 flex-shrink-0 mt-0.5" />
-            <span className="flex-1">{purpose}</span>
-            {selectedPurpose === purpose && (
-              <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
-            )}
-          </div>
+          Toutes les catégories
+        </button>
+        {Object.entries(categories).map(([key, category]) => (
+          <button
+            key={key}
+            onClick={() => setSelectedCategory(key)}
+            className={`px-3 py-1 text-xs rounded-full transition-all ${
+              selectedCategory === key 
+                ? 'bg-purple-600 text-white' 
+                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+            }`}
+          >
+            {category.icon} {category.name}
+          </button>
+        ))}
+      </div>
+
+      {/* Grille des motifs */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-2 max-h-64 overflow-y-auto">
+        {filteredPurposes.map(purpose => {
+          // Déterminer l'icône selon la catégorie
+          let categoryIcon = '📋';
+          Object.entries(categories).forEach(([key, category]) => {
+            if (category.keywords.some(keyword => 
+              purpose.toLowerCase().includes(keyword.toLowerCase())
+            )) {
+              categoryIcon = category.icon;
+            }
+          });
+
+          return (
+            <div
+              key={purpose}
+              onClick={() => onSelect(purpose)}
+              className={`p-3 border rounded-lg cursor-pointer transition-all text-sm ${
+                selectedPurpose === purpose
+                  ? 'border-blue-500 bg-blue-50 text-blue-900'
+                  : 'border-gray-200 hover:border-blue-300 hover:bg-gray-50'
+              }`}
+            >
+              <div className="flex items-start gap-2">
+                <span className="text-lg">{categoryIcon}</span>
+                <span className="flex-1">{purpose}</span>
+                {selectedPurpose === purpose && (
+                  <CheckCircle className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
+
+      {filteredPurposes.length === 0 && selectedCategory && (
+        <div className="text-center py-8">
+          <FileText className="w-12 h-12 text-gray-300 mx-auto mb-2" />
+          <p className="text-gray-500">Aucun motif trouvé dans cette catégorie</p>
         </div>
-      ))}
+      )}
     </div>
   );
 };
@@ -553,6 +809,7 @@ export const AdminReceptionForm: React.FC<AdminReceptionFormProps> = ({ onSubmit
                   onSelect={handleEmployeeSelect}
                   selectedEmployee={selectedEmployee}
                   searchTerm={employeeSearchTerm}
+                  selectedService={selectedService}
                 />
               </div>
             )}
