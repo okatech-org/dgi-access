@@ -16,10 +16,42 @@ env:
   IMAGE_NAME: dgi-audit-server
 
 jobs:
+  # Job 0: Vérification de la configuration
+  config-check-audit:
+    name: Vérification Configuration Audit
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: 📋 Audit Server Configuration Summary
+      run: |
+        echo "🔐 Résumé de la Configuration pour le Serveur d'Audit:"
+        echo "-------------------------------------------------------"
+        
+        # Secrets requis (automatiques)
+        echo "✅ GITHUB_TOKEN: Fourni automatiquement"
+        
+        # Secrets optionnels
+        echo ""
+        echo "📝 Secrets optionnels:"
+        
+        if [ -n "$SLACK_WEBHOOK_URL" ]; then
+          echo "✅ SLACK_WEBHOOK_URL: Configuré - notifications déploiement activées"
+        else
+          echo "⚠️ SLACK_WEBHOOK_URL: Non configuré - notifications ignorées"
+        fi
+        
+        echo ""
+        echo "💡 Pour configurer les secrets manquants:"
+        echo "   → Allez sur: Settings > Secrets and variables > Actions"
+        echo "   → Consultez: CONFIGURATION_SECRETS.md"
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
   # Tests du serveur d'audit
   test-audit-server:
     name: Test Audit Server
     runs-on: ubuntu-latest
+    needs: config-check-audit
     
     steps:
     - name: 📥 Checkout code
@@ -132,7 +164,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/develop' && github.event_name == 'push'
     needs: [test-audit-server, build-docker, security-scan]
-    environment: staging
     
     steps:
     - name: 📥 Checkout code
@@ -155,7 +186,6 @@ jobs:
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
     needs: [test-audit-server, build-docker, security-scan]
-    environment: production
     
     steps:
     - name: 📥 Checkout code
@@ -178,10 +208,23 @@ jobs:
         # curl -f https://audit.dgi.ga/health || exit 1
         echo "✅ Health check passed"
         
+    - name: 🔍 Check Slack configuration
+      run: |
+        if [ -z "$SLACK_WEBHOOK_URL" ]; then
+          echo "⚠️ SLACK_WEBHOOK_URL non configuré - notifications ignorées"
+          echo "💡 Pour activer: Configurez le secret SLACK_WEBHOOK_URL dans les paramètres GitHub"
+        else
+          echo "✅ Slack configuré - envoi de notification"
+        fi
+      env:
+        SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+
     - name: 🔔 Notify deployment
+      if: secrets.SLACK_WEBHOOK_URL
       uses: 8398a7/action-slack@v3
       with:
         status: success
         text: "✅ Serveur d'audit DGI déployé en production!"
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
+      continue-on-error: true  # Ne pas faire échouer si Slack est en panne
