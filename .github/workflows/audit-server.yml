@@ -220,11 +220,10 @@ jobs:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
 
     - name: 🔔 Notify deployment
-      if: secrets.SLACK_WEBHOOK_URL
       uses: 8398a7/action-slack@v3
       with:
         status: success
         text: "✅ Serveur d'audit DGI déployé en production!"
       env:
         SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
-      continue-on-error: true  # Ne pas faire échouer si Slack est en panne
+      continue-on-error: true  # Ne pas faire échouer si Slack n'est pas configuré
