@@ -79,7 +79,7 @@ function displaySecretsTable() {
   console.log(chalk.yellow.bold('📋 Secrets Optionnels:\n'));
   
   secrets.optional.forEach(secret => {
-    console.log(chalk.orange(`⚠️  ${secret.name}`));
+    console.log(chalk.yellow(`⚠️  ${secret.name}`));
     console.log(chalk.gray(`   Description: ${secret.description}`));
     console.log(chalk.gray(`   Scope: ${secret.scope}`));
     console.log(chalk.gray(`   Comment obtenir: ${secret.action}`));
@@ -99,7 +99,7 @@ function displayConfigurationInstructions() {
   console.log(chalk.white('3. Configurez les secrets selon vos besoins:'));
   
   secrets.optional.forEach(secret => {
-    console.log(chalk.cyan(`   • ${secret.name}:`));
+    console.log(chalk.blue(`   • ${secret.name}:`));
     console.log(chalk.gray(`     ${secret.action}`));
   });
   
@@ -176,7 +176,7 @@ function displayConfigurationURLs() {
   };
   
   Object.entries(urls).forEach(([service, url]) => {
-    console.log(chalk.cyan(`${service}:`));
+    console.log(chalk.blue(`${service}:`));
     console.log(chalk.gray(`${url}\n`));
   });
 }
